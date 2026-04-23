@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="g" x1="10" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#00F0FF"/>
+      <stop offset="0.55" stop-color="#3B82F6"/>
+      <stop offset="1" stop-color="#7C3AED"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="b"/>
+      <feColorMatrix in="b" type="matrix" values="
+        1 0 0 0 0
+        0 1 0 0 0
+        0 0 1 0 0
+        0 0 0 0.9 0" result="c"/>
+      <feMerge>
+        <feMergeNode in="c"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect x="7" y="7" width="50" height="50" rx="14" fill="#080808"/>
+  <rect x="9" y="9" width="46" height="46" rx="13" stroke="url(#g)" stroke-opacity="0.55" stroke-width="2"/>
+
+  <!-- Stylized A monogram -->
+  <path
+    filter="url(#glow)"
+    d="M18 46L30.5 18.5C31.1 17.2 32.9 17.2 33.5 18.5L46 46M24.5 36.5H39.5"
+    stroke="url(#g)"
+    stroke-width="4.2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>
+
