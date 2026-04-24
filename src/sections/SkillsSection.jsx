@@ -143,7 +143,6 @@ function CategoryCard({ group, index }) {
           {group.icon}
         </div>
         <div>
-          <p className="card-category-label">CATEGORY</p>
           <h3 className="card-title" style={{ color: group.color }}>
             {group.title}
           </h3>

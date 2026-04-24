@@ -19,7 +19,11 @@ function GridLines() {
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{opacity:0.035}}>
       <svg width="100%" height="100%">
-        <defs><pattern id="hero-grid" width="80" height="80" patternUnits="userSpaceOnUse"><path d="M 80 0 L 0 0 0 80" fill="none" stroke="white" strokeWidth="0.5"/></pattern></defs>
+        <defs>
+          <pattern id="hero-grid" width="80" height="80" patternUnits="userSpaceOnUse">
+            <path d="M 80 0 L 0 0 0 80" fill="none" stroke="white" strokeWidth="0.5"/>
+          </pattern>
+        </defs>
         <rect width="100%" height="100%" fill="url(#hero-grid)"/>
       </svg>
     </div>
@@ -39,25 +43,26 @@ function FloatingBadge({ children, style, delay = 0 }) {
 }
 
 function MagneticButton({ children, onClick, href, primary = false }) {
-  const ref = useRef(null);
+  const ref    = useRef(null);
   const rafRef = useRef(null);
 
   const onMove = (e) => {
     const r = ref.current?.getBoundingClientRect();
     if (!r) return;
-    const dx = e.clientX - (r.left + r.width / 2);
-    const dy = e.clientY - (r.top + r.height / 2);
-    const dist = Math.sqrt(dx*dx + dy*dy);
-    const s = dist < 80 ? ((80-dist)/80)*0.35 : 0;
+    const dx   = e.clientX - (r.left + r.width / 2);
+    const dy   = e.clientY - (r.top + r.height / 2);
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const s    = dist < 80 ? ((80 - dist) / 80) * 0.35 : 0;
     cancelAnimationFrame(rafRef.current);
     rafRef.current = requestAnimationFrame(() => {
-      if (ref.current) ref.current.style.transform = `translate(${dx*s}px,${dy*s}px)`;
+      if (ref.current) ref.current.style.transform = `translate(${dx * s}px,${dy * s}px)`;
     });
   };
+
   const onLeave = () => {
     if (!ref.current) return;
     ref.current.style.transition = "transform 0.5s cubic-bezier(0.23,1,0.32,1)";
-    ref.current.style.transform = "translate(0px,0px)";
+    ref.current.style.transform  = "translate(0px,0px)";
     setTimeout(() => { if (ref.current) ref.current.style.transition = ""; }, 500);
   };
 
@@ -79,8 +84,8 @@ function MagneticButton({ children, onClick, href, primary = false }) {
   return (
     <div ref={ref} onMouseMove={onMove} onMouseLeave={onLeave} style={{display:"inline-block"}}>
       {href
-        ? <a href={href} className={base+gCls}>{inner}</a>
-        : <button type="button" onClick={onClick} className={base+(primary?pCls:gCls)}>{inner}</button>
+        ? <a href={href} className={base + gCls}>{inner}</a>
+        : <button type="button" onClick={onClick} className={base + (primary ? pCls : gCls)}>{inner}</button>
       }
     </div>
   );
@@ -89,15 +94,16 @@ function MagneticButton({ children, onClick, href, primary = false }) {
 function StatPill({ value, label }) {
   return (
     <div className="flex flex-col items-start gap-0.5">
-      <span className="font-mono text-[22px] font-bold text-white leading-none">{value}</span>
-      <span className="text-[11px] font-medium tracking-widest text-white/35 uppercase">{label}</span>
+      <span className="font-mono text-[18px] font-bold text-white leading-none sm:text-[22px]">{value}</span>
+      <span className="text-[10px] font-medium tracking-widest text-white/35 uppercase sm:text-[11px]">{label}</span>
     </div>
   );
 }
 
 function ScrollIndicator() {
   return (
-    <div className="absolute bottom-8 left-1/2 z-10 -translate-x-1/2 pointer-events-none">
+    // Only shown on large screens where the pin/scroll effect is active
+    <div className="absolute bottom-8 left-1/2 z-10 -translate-x-1/2 pointer-events-none hidden lg:block">
       <div className="flex flex-col items-center gap-3">
         <span className="font-mono text-[10px] font-semibold tracking-[0.35em] text-white/30 uppercase">Scroll</span>
         <div className="relative h-10 w-[1.5px] overflow-hidden rounded-full" style={{background:"rgba(255,255,255,0.08)"}}>
@@ -109,44 +115,6 @@ function ScrollIndicator() {
   );
 }
 
-/* ══════════════════════════════════════════
-   THE FIX — what was broken and why:
-
-   Problem 1 — Initial transform conflict:
-     App.jsx GSAP does: gsap.set([line2,line3,sub,ctas], {opacity:0, y:80})
-     But HeroSection was setting inline style opacity:0 WITHOUT transform.
-     When GSAP then tweens y from 80→0 it works, but the element starts
-     at y=0 (no inline transform set), so lines 2/3 "snap" before animating.
-     FIX: Set BOTH opacity:0 AND transform:translateY(80px) as inline styles
-     on all GSAP-controlled elements. This matches exactly what gsap.set does.
-
-   Problem 2 — Eyebrow CSS animation conflicting with GSAP:
-     The eyebrow div had opacity:0 + CSS fadeUp animation (fires immediately).
-     GSAP never touches it, but the CSS animation delay of 0.1s meant it
-     appeared at the same time as line1, making the sequence feel random.
-     FIX: Keep eyebrow as CSS-only but use a very short delay (0.1s) so it
-     appears almost immediately — it's decorative, not part of the sequence.
-
-   Problem 3 — Stats row animation delay too aggressive:
-     Stats had animation delay 0.8s which caused it to fire mid-GSAP-sequence
-     creating a jarring overlap where stats appeared before subtext/CTAs.
-     FIX: Use delay 0.4s — stats should be visible from the start since they
-     don't participate in the scroll-step sequence at all.
-
-   Problem 4 — willChange missing:
-     GSAP-animated elements need willChange:"transform,opacity" to prevent
-     browser repaints causing jank during the scroll-triggered animations.
-
-   GSAP timeline in App.jsx controls EXACTLY these 5 refs:
-     heroLineRefs[0] → line 0  (step0→step1)
-     heroLineRefs[1] → line 1  (step1→step2)
-     heroLineRefs[2] → line 2  (step2→step3)
-     heroSubtextRef  → subtext (step3, shared tween with ctas)
-     heroCtasRef     → ctas    (step3, shared tween with ctas)
-   
-   Everything else (eyebrow, stats) uses CSS-only animations.
-   Zero interference.
-══════════════════════════════════════════ */
 export default function HeroSection({
   isMobile,
   HeroScene,
@@ -155,23 +123,29 @@ export default function HeroSection({
   heroSubtextRef,
   heroCtasRef,
   scrollToId,
+  animateHero = false, // true only on desktop (≥1024px) — drives initial hidden state
 }) {
   const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 });
 
   useEffect(() => {
-    const onMove = (e) => setMousePos({ x: e.clientX/window.innerWidth, y: e.clientY/window.innerHeight });
+    const onMove = (e) =>
+      setMousePos({ x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight });
     window.addEventListener("mousemove", onMove, { passive: true });
     return () => window.removeEventListener("mousemove", onMove);
   }, []);
 
-  // Shared inline style for all GSAP-controlled elements.
-  // Must match exactly what App.jsx gsap.set() applies so there's
-  // no frame where the element is at the wrong position.
-  const gsapInitial = {
-    opacity: 0,
-    transform: "translateY(80px)",
-    willChange: "transform, opacity",
-  };
+  // ── Initial styles ────────────────────────────────────────────────────────
+  // animateHero=true  → element starts hidden (GSAP will reveal it step-by-step)
+  // animateHero=false → element starts fully visible (CSS fade-in instead)
+  const gsapInitial = animateHero
+    ? { opacity: 0, transform: "translateY(80px)", willChange: "transform, opacity" }
+    : {};
+
+  // CSS fade-up for non-animated (mobile/tablet) elements
+  const cssReveal = (delay = 0) =>
+    !animateHero
+      ? { opacity: 0, animation: `hFadeUp 0.6s cubic-bezier(0.22,1,0.36,1) ${delay}s forwards` }
+      : {};
 
   return (
     <section
@@ -182,9 +156,15 @@ export default function HeroSection({
       {/* Background */}
       <div className="absolute inset-0">
         {isMobile ? (
-          <div className="h-full w-full" style={{background:"radial-gradient(ellipse at 30% 20%, #1e3a8a18 0%, transparent 60%), radial-gradient(ellipse at 80% 80%, #0ea5e910 0%, transparent 60%), #080808"}}/>
+          <div className="h-full w-full" style={{
+            background: "radial-gradient(ellipse at 30% 20%, #1e3a8a18 0%, transparent 60%), radial-gradient(ellipse at 80% 80%, #0ea5e910 0%, transparent 60%), #080808"
+          }}/>
         ) : (
-          <Suspense fallback={<div className="h-full w-full" style={{background:"radial-gradient(ellipse at 30% 30%, #1e3a8a18 0%, transparent 60%), #080808"}}/>}>
+          <Suspense fallback={
+            <div className="h-full w-full" style={{
+              background: "radial-gradient(ellipse at 30% 30%, #1e3a8a18 0%, transparent 60%), #080808"
+            }}/>
+          }>
             <HeroScene />
           </Suspense>
         )}
@@ -193,36 +173,41 @@ export default function HeroSection({
       <GridLines />
       <GradientOrbs />
 
-      {/* Mouse parallax */}
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{background:`radial-gradient(ellipse at ${mousePos.x*100}% ${mousePos.y*100}%, rgba(59,130,246,0.045) 0%, transparent 55%)`,transition:"background 0.1s"}}
-      />
+      {/* Mouse parallax — desktop only to avoid pointless repaints on touch */}
+      {!isMobile && (
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background: `radial-gradient(ellipse at ${mousePos.x * 100}% ${mousePos.y * 100}%, rgba(59,130,246,0.045) 0%, transparent 55%)`,
+            transition: "background 0.1s",
+          }}
+        />
+      )}
 
       {/* Dark overlay */}
       <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-black/40 via-black/30 to-black/60" />
 
-      {/* Floating badges */}
-      <FloatingBadge style={{top:"22%",right:"8%"}} delay={0}>React.js</FloatingBadge>
-      <FloatingBadge style={{top:"55%",right:"5%"}} delay={2}>Node.js</FloatingBadge>
+      {/* Floating badges — desktop only */}
+      <FloatingBadge style={{top:"22%",right:"8%"}}  delay={0}>React.js</FloatingBadge>
+      <FloatingBadge style={{top:"55%",right:"5%"}}  delay={2}>Node.js</FloatingBadge>
       <FloatingBadge style={{top:"38%",right:"18%"}} delay={1}>MongoDB</FloatingBadge>
 
       {/* ── Main content ── */}
       <div className="relative z-10 w-full px-5 pt-24 md:px-10 md:pt-28 lg:px-16">
-        <div className="flex w-full max-w-[1100px] flex-col gap-7">
+        <div className="flex w-full max-w-[1100px] flex-col gap-5 md:gap-7">
 
-          {/* EYEBROW — CSS-only, not in GSAP timeline */}
+          {/* EYEBROW — always CSS-only */}
           <div
             className="flex items-center gap-3"
-            style={{opacity:0, animation:"hFadeUp 0.55s cubic-bezier(0.22,1,0.36,1) 0.1s forwards"}}
+            style={{ opacity: 0, animation: "hFadeUp 0.55s cubic-bezier(0.22,1,0.36,1) 0.1s forwards" }}
           >
             <span className="h-px w-8 bg-[#3b82f6]/60" />
-            <span className="font-mono text-[11px] font-semibold tracking-[0.3em] text-[#3b82f6]/70 uppercase">
+            <span className="font-mono text-[10px] font-semibold tracking-[0.3em] text-[#3b82f6]/70 uppercase sm:text-[11px]">
               Full Stack Developer
             </span>
           </div>
 
-          {/* HEADLINE LINES — GSAP-controlled via heroLineRefs[0/1/2] */}
+          {/* HEADLINE LINES */}
           <div className="flex flex-col gap-0 md:gap-1">
             {[
               { text: "Hi, I'm Akshay.", idx: 0 },
@@ -234,22 +219,26 @@ export default function HeroSection({
                 ref={(el) => { heroLineRefs.current[idx] = el; }}
                 className="font-display tracking-tight text-white"
                 style={{
-                  fontSize: "clamp(48px, 9vw, 108px)",
+                  fontSize: "clamp(38px, 9vw, 108px)",
                   fontWeight: 700,
                   lineHeight: 0.92,
                   letterSpacing: "-0.025em",
-                  // line0: App.jsx does gsap.set(line1,{opacity:1,y:0}) immediately
-                  // so we can safely start it visible. Lines 1+2 start at y:80, opacity:0.
+                  // line0 always visible; lines 1+2 depend on animateHero
                   ...(idx === 0
                     ? { opacity: 1, transform: "translateY(0px)", willChange: "transform, opacity" }
-                    : gsapInitial
+                    : animateHero
+                      ? gsapInitial
+                      : cssReveal(0.1 + idx * 0.12)   // staggered CSS reveal on mobile
                   ),
                 }}
               >
                 {idx === 1 ? (
                   <>
                     <span>MERN</span>
-                    <span className="ml-3 md:ml-4" style={{WebkitTextStroke:"1px rgba(255,255,255,0.18)",WebkitTextFillColor:"transparent"}}>
+                    <span className="ml-3 md:ml-4" style={{
+                      WebkitTextStroke: "1px rgba(255,255,255,0.18)",
+                      WebkitTextFillColor: "transparent",
+                    }}>
                       Stack
                     </span>
                   </>
@@ -258,25 +247,25 @@ export default function HeroSection({
             ))}
           </div>
 
-          {/* SUBTEXT — GSAP-controlled via heroSubtextRef */}
+          {/* SUBTEXT */}
           <p
             ref={heroSubtextRef}
-            className="max-w-[50rem] font-sans text-[14px] leading-relaxed text-zinc-400 md:text-[15px]"
-            style={gsapInitial}
+            className="max-w-[50rem] font-sans text-[13px] leading-relaxed text-zinc-400 md:text-[15px]"
+            style={animateHero ? gsapInitial : cssReveal(0.45)}
           >
             Building{" "}
             <span className="text-[#3b82f6]/80 font-medium">full-stack</span> products with{" "}
-            <span className="font-mono text-zinc-300 text-[13px] bg-white/[0.05] rounded px-1.5 py-0.5">React</span>{" "}
-            <span className="font-mono text-zinc-300 text-[13px] bg-white/[0.05] rounded px-1.5 py-0.5">Node.js</span>{" "}
-            <span className="font-mono text-zinc-300 text-[13px] bg-white/[0.05] rounded px-1.5 py-0.5">MongoDB</span>{" "}
+            <span className="font-mono text-zinc-300 text-[12px] bg-white/[0.05] rounded px-1.5 py-0.5 md:text-[13px]">React</span>{" "}
+            <span className="font-mono text-zinc-300 text-[12px] bg-white/[0.05] rounded px-1.5 py-0.5 md:text-[13px]">Node.js</span>{" "}
+            <span className="font-mono text-zinc-300 text-[12px] bg-white/[0.05] rounded px-1.5 py-0.5 md:text-[13px]">MongoDB</span>{" "}
             — shipping fast, built to scale.
           </p>
 
-          {/* CTAs — GSAP-controlled via heroCtasRef */}
+          {/* CTAs */}
           <div
             ref={heroCtasRef}
             className="flex flex-col gap-3 sm:flex-row sm:items-center"
-            style={gsapInitial}
+            style={animateHero ? gsapInitial : cssReveal(0.55)}
           >
             <MagneticButton primary onClick={() => scrollToId("work")}>
               <span className="mr-2">View My Work</span>
@@ -292,10 +281,10 @@ export default function HeroSection({
             </MagneticButton>
           </div>
 
-          {/* STATS — CSS-only, not in GSAP timeline */}
+          {/* STATS — always CSS-only */}
           <div
-            className="mt-2 flex items-center gap-8 border-t border-white/[0.06] pt-5"
-            style={{opacity:0, animation:"hFadeUp 0.6s cubic-bezier(0.22,1,0.36,1) 0.4s forwards"}}
+            className="mt-2 flex items-center gap-5 border-t border-white/[0.06] pt-5 sm:gap-8"
+            style={{ opacity: 0, animation: "hFadeUp 0.6s cubic-bezier(0.22,1,0.36,1) 0.4s forwards" }}
           >
             <StatPill value="3+" label="Projects shipped" />
             <div className="h-8 w-px bg-white/10" />

@@ -126,37 +126,56 @@ export default function ContactSection({ copyField, onToast }) {
 
   // GSAP scroll reveal
   useEffect(() => {
-    const els = [
-      leftRef.current,
-      rightRef.current,
-      headingRef.current,
-    ].filter(Boolean);
-    gsap.set(els, { opacity: 0, y: 48 });
-
-    const rows = rowsRef.current?.querySelectorAll(".terminal-row") ?? [];
-    gsap.set(rows, { opacity: 0, x: -24 });
-
-    const timer = setTimeout(() => {
-      const ctx = gsap.context(() => {
-        const tl = gsap.timeline({
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: "top 68%",
-            toggleActions: "play none none none",
-          },
-        });
-        tl.to(headingRef.current, { opacity: 1, y: 0, duration: 0.7, ease: "power3.out" })
-          .to(leftRef.current,   { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" }, "-=0.4")
-          .to(rows, {
-            opacity: 1, x: 0, duration: 0.5, ease: "power3.out",
+    const ctx = gsap.context(() => {
+      const els = [
+        leftRef.current,
+        rightRef.current,
+        headingRef.current,
+      ].filter(Boolean);
+  
+      gsap.set(els, { opacity: 0, y: 48 });
+  
+      const rows = rowsRef.current?.querySelectorAll(".terminal-row") ?? [];
+      gsap.set(rows, { opacity: 0, x: -24 });
+  
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: "top 68%",
+          toggleActions: "play none none none",
+        },
+      });
+  
+      tl.to(headingRef.current, {
+        opacity: 1,
+        y: 0,
+        duration: 0.7,
+        ease: "power3.out",
+      })
+        .to(
+          leftRef.current,
+          { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" },
+          "-=0.4"
+        )
+        .to(
+          rows,
+          {
+            opacity: 1,
+            x: 0,
+            duration: 0.5,
+            ease: "power3.out",
             stagger: 0.07,
-          }, "-=0.5")
-          .to(rightRef.current,  { opacity: 1, y: 0, duration: 0.9, ease: "power3.out" }, "-=0.6");
-      }, sectionRef);
-      return () => ctx.revert();
-    }, 300);
-
-    return () => clearTimeout(timer);
+          },
+          "-=0.5"
+        )
+        .to(
+          rightRef.current,
+          { opacity: 1, y: 0, duration: 0.9, ease: "power3.out" },
+          "-=0.6"
+        );
+    }, sectionRef);
+  
+    return () => ctx.revert();
   }, []);
 
   return (

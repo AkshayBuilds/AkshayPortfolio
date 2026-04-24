@@ -65,6 +65,7 @@ export default function App() {
     lenisRef.current?.scrollTo(el, { offset: -84, duration: 1.2, easing: (t) => 1 - Math.pow(1 - t, 3) });
   };
 
+  // ── Lenis smooth scroll ───────────────────────────────────────────────────
   useEffect(() => {
     const lenis = new Lenis({
       duration: 1.15,
@@ -77,10 +78,7 @@ export default function App() {
     lenis.on("scroll", ScrollTrigger.update);
 
     let raf = 0;
-    const loop = (time) => {
-      lenis.raf(time);
-      raf = requestAnimationFrame(loop);
-    };
+    const loop = (time) => { lenis.raf(time); raf = requestAnimationFrame(loop); };
     raf = requestAnimationFrame(loop);
 
     const onRefresh = () => lenis.resize();
@@ -95,14 +93,27 @@ export default function App() {
     };
   }, []);
 
+  // ── Hero scroll-step animation — DESKTOP ONLY (≥ 1024px) ─────────────────
+  // On mobile & tablet we skip the pinning + wheel hijack entirely.
+  // All hero elements are shown immediately (handled in HeroSection via
+  // the `animateHero` prop being false).
   useEffect(() => {
+    const isLargeScreen = window.innerWidth >= 1024;
+
     const ctx = gsap.context(() => {
       const [line1, line2, line3] = heroLineRefs.current;
-      const sub = heroSubtextRef.current;
+      const sub  = heroSubtextRef.current;
       const ctas = heroCtasRef.current;
 
       if (!line1 || !line2 || !line3 || !sub || !ctas) return;
 
+      // ── Mobile / tablet: reveal everything immediately, no pin ──
+      if (!isLargeScreen) {
+        gsap.set([line1, line2, line3, sub, ctas], { opacity: 1, y: 0, clearProps: "willChange" });
+        return;
+      }
+
+      // ── Desktop: step-by-step scroll reveal ──
       gsap.set([line2, line3, sub, ctas], { opacity: 0, y: 80 });
       gsap.set(line1, { opacity: 1, y: 0 });
 
@@ -114,59 +125,42 @@ export default function App() {
         .addLabel("step2")
         .to(line3, { opacity: 1, y: 0, duration: 0.5 })
         .addLabel("step3")
-        .to(sub, { opacity: 1, y: 0, duration: 0.4 })
+        .to(sub,  { opacity: 1, y: 0, duration: 0.4 })
         .to(ctas, { opacity: 1, y: 0, duration: 0.4 })
         .addLabel("step4");
 
-      const steps = ["step0", "step1", "step2", "step3", "step4"];
+      const steps = ["step0","step1","step2","step3","step4"];
       let currentStep = 0;
-      let isAnimating = false;
-      let heroActive = false;
-      let isLocked = false;
-      let wheelQueue = 0;
+      let isAnimating  = false;
+      let heroActive   = false;
+      let isLocked     = false;
+      let wheelQueue   = 0;
 
       const goToStep = (index) => {
         if (isAnimating) return;
         if (index < 0 || index >= steps.length) return;
-
         isAnimating = true;
         tl.tweenTo(steps[index], {
           duration: 0.45,
           ease: "power2.out",
-          onComplete: () => {
-            currentStep = index;
-            isAnimating = false;
-          },
+          onComplete: () => { currentStep = index; isAnimating = false; },
         });
       };
 
       const processScroll = () => {
         if (isLocked || wheelQueue === 0) return;
-
         isLocked = true;
         const direction = wheelQueue > 0 ? 1 : -1;
         wheelQueue = 0;
-
-        if (direction > 0 && currentStep < steps.length - 1) {
-          goToStep(currentStep + 1);
-        } else if (direction < 0 && currentStep > 0) {
-          goToStep(currentStep - 1);
-        }
-
-        window.setTimeout(() => {
-          isLocked = false;
-          processScroll();
-        }, 550);
+        if (direction > 0 && currentStep < steps.length - 1) goToStep(currentStep + 1);
+        else if (direction < 0 && currentStep > 0) goToStep(currentStep - 1);
+        window.setTimeout(() => { isLocked = false; processScroll(); }, 550);
       };
 
       const onWheel = (e) => {
         if (!heroActive) return;
-
         const down = e.deltaY > 0;
-        if (currentStep < steps.length - 1 || !down) {
-          e.preventDefault();
-        }
-
+        if (currentStep < steps.length - 1 || !down) e.preventDefault();
         wheelQueue += down ? 1 : -1;
         processScroll();
       };
@@ -177,39 +171,34 @@ export default function App() {
         end: "+=150%",
         pin: true,
         invalidateOnRefresh: true,
-        onEnter: () => (heroActive = true),
+        onEnter:     () => (heroActive = true),
         onEnterBack: () => (heroActive = true),
-        onLeave: () => (heroActive = false),
+        onLeave:     () => (heroActive = false),
         onLeaveBack: () => (heroActive = false),
       });
 
       window.addEventListener("wheel", onWheel, { passive: false });
-      return () => {
-        window.removeEventListener("wheel", onWheel);
-      };
+      return () => window.removeEventListener("wheel", onWheel);
     }, heroSectionRef);
 
     return () => ctx.revert();
   }, []);
 
+  // ── Nav solid on scroll ───────────────────────────────────────────────────
   useEffect(() => {
-    const updateNav = () => {
-      const y = window.scrollY || 0;
-      setNavSolid(y > 20);
-    };
-    updateNav();
-    window.addEventListener("scroll", updateNav, { passive: true });
-    return () => window.removeEventListener("scroll", updateNav);
+    const update = () => setNavSolid((window.scrollY || 0) > 20);
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    return () => window.removeEventListener("scroll", update);
   }, []);
 
+  // ── Stack-card shrink effect ──────────────────────────────────────────────
   useEffect(() => {
     const cards = gsap.utils.toArray(".stack-card");
     const tweens = [];
-
     cards.forEach((card, i) => {
       const next = cards[i + 1];
       if (!next) return;
-
       const tween = gsap.to(card, {
         scale: 0.94,
         opacity: 0.78,
@@ -223,12 +212,8 @@ export default function App() {
       });
       tweens.push(tween);
     });
-
     return () => {
-      tweens.forEach((t) => {
-        t.scrollTrigger?.kill();
-        t.kill();
-      });
+      tweens.forEach((t) => { t.scrollTrigger?.kill(); t.kill(); });
     };
   }, [projects]);
 
@@ -236,17 +221,24 @@ export default function App() {
     try {
       await navigator.clipboard.writeText(value);
       setToast(`${label} copied`);
-      window.setTimeout(() => setToast(null), 1500);
     } catch {
       setToast("Copy failed");
-      window.setTimeout(() => setToast(null), 1500);
     }
+    window.setTimeout(() => setToast(null), 1500);
   };
+
+  // Passed to HeroSection — false on mobile/tablet so elements start visible
+  const animateHero = typeof window !== "undefined" && window.innerWidth >= 1024;
 
   return (
     <div className="relative min-h-screen bg-[#080808] font-sans text-white">
       <NoiseOverlay />
-      <Header navSolid={navSolid} menuOpen={menuOpen} setMenuOpen={setMenuOpen} scrollToId={scrollToId} />
+      <Header
+        navSolid={navSolid}
+        menuOpen={menuOpen}
+        setMenuOpen={setMenuOpen}
+        scrollToId={scrollToId}
+      />
 
       <main className="relative">
         <HeroSection
@@ -257,6 +249,7 @@ export default function App() {
           heroSubtextRef={heroSubtextRef}
           heroCtasRef={heroCtasRef}
           scrollToId={scrollToId}
+          animateHero={animateHero}   // ← NEW prop
         />
         <AboutSection />
         <SkillsSection />
@@ -266,11 +259,11 @@ export default function App() {
         <FooterSection />
       </main>
 
-      {toast ? (
+      {toast && (
         <div className="fixed bottom-6 left-1/2 z-[70] -translate-x-1/2 rounded-full border border-white/10 bg-black/70 px-5 py-3 text-[13px] font-semibold text-white/90 shadow-[0_0_30px_#000000aa] backdrop-blur-md">
           {toast}
         </div>
-      ) : null}
+      )}
     </div>
   );
 }
