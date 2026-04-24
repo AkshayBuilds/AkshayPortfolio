@@ -3,9 +3,16 @@
 
 @import "tailwindcss";
 
+
+/* Chrome, Safari */
+::-webkit-scrollbar {
+  display: none;
+}
 html,
 body {
   background: #080808;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* Smooth text rendering */
