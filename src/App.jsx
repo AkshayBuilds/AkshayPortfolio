@@ -20,10 +20,6 @@ const HeroScene = lazy(() => import("./components/HeroScene.jsx"));
 export default function App() {
   const isMobile = useIsMobile(768);
   const lenisRef = useRef(null);
-  const heroLineRefs = useRef([]);
-  const heroSectionRef = useRef(null);
-  const heroSubtextRef = useRef(null);
-  const heroCtasRef = useRef(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [navSolid, setNavSolid] = useState(false);
   const [toast, setToast] = useState(null);
@@ -93,97 +89,6 @@ export default function App() {
     };
   }, []);
 
-  // ── Hero scroll-step animation — DESKTOP ONLY (≥ 1024px) ─────────────────
-  // On mobile & tablet we skip the pinning + wheel hijack entirely.
-  // All hero elements are shown immediately (handled in HeroSection via
-  // the `animateHero` prop being false).
-  useEffect(() => {
-    const isLargeScreen = window.innerWidth >= 1024;
-
-    const ctx = gsap.context(() => {
-      const [line1, line2, line3] = heroLineRefs.current;
-      const sub  = heroSubtextRef.current;
-      const ctas = heroCtasRef.current;
-
-      if (!line1 || !line2 || !line3 || !sub || !ctas) return;
-
-      // ── Mobile / tablet: reveal everything immediately, no pin ──
-      if (!isLargeScreen) {
-        gsap.set([line1, line2, line3, sub, ctas], { opacity: 1, y: 0, clearProps: "willChange" });
-        return;
-      }
-
-      // ── Desktop: step-by-step scroll reveal ──
-      gsap.set([line2, line3, sub, ctas], { opacity: 0, y: 80 });
-      gsap.set(line1, { opacity: 1, y: 0 });
-
-      const tl = gsap.timeline({ paused: true });
-      tl.addLabel("step0")
-        .to(line1, { opacity: 1, y: 0, duration: 0.5 })
-        .addLabel("step1")
-        .to(line2, { opacity: 1, y: 0, duration: 0.5 })
-        .addLabel("step2")
-        .to(line3, { opacity: 1, y: 0, duration: 0.5 })
-        .addLabel("step3")
-        .to(sub,  { opacity: 1, y: 0, duration: 0.4 })
-        .to(ctas, { opacity: 1, y: 0, duration: 0.4 })
-        .addLabel("step4");
-
-      const steps = ["step0","step1","step2","step3","step4"];
-      let currentStep = 0;
-      let isAnimating  = false;
-      let heroActive   = false;
-      let isLocked     = false;
-      let wheelQueue   = 0;
-
-      const goToStep = (index) => {
-        if (isAnimating) return;
-        if (index < 0 || index >= steps.length) return;
-        isAnimating = true;
-        tl.tweenTo(steps[index], {
-          duration: 0.45,
-          ease: "power2.out",
-          onComplete: () => { currentStep = index; isAnimating = false; },
-        });
-      };
-
-      const processScroll = () => {
-        if (isLocked || wheelQueue === 0) return;
-        isLocked = true;
-        const direction = wheelQueue > 0 ? 1 : -1;
-        wheelQueue = 0;
-        if (direction > 0 && currentStep < steps.length - 1) goToStep(currentStep + 1);
-        else if (direction < 0 && currentStep > 0) goToStep(currentStep - 1);
-        window.setTimeout(() => { isLocked = false; processScroll(); }, 550);
-      };
-
-      const onWheel = (e) => {
-        if (!heroActive) return;
-        const down = e.deltaY > 0;
-        if (currentStep < steps.length - 1 || !down) e.preventDefault();
-        wheelQueue += down ? 1 : -1;
-        processScroll();
-      };
-
-      ScrollTrigger.create({
-        trigger: heroSectionRef.current,
-        start: "top top",
-        end: "+=150%",
-        pin: true,
-        invalidateOnRefresh: true,
-        onEnter:     () => (heroActive = true),
-        onEnterBack: () => (heroActive = true),
-        onLeave:     () => (heroActive = false),
-        onLeaveBack: () => (heroActive = false),
-      });
-
-      window.addEventListener("wheel", onWheel, { passive: false });
-      return () => window.removeEventListener("wheel", onWheel);
-    }, heroSectionRef);
-
-    return () => ctx.revert();
-  }, []);
-
   // ── Nav solid on scroll ───────────────────────────────────────────────────
   useEffect(() => {
     const update = () => setNavSolid((window.scrollY || 0) > 20);
@@ -227,9 +132,6 @@ export default function App() {
     window.setTimeout(() => setToast(null), 1500);
   };
 
-  // Passed to HeroSection — false on mobile/tablet so elements start visible
-  const animateHero = typeof window !== "undefined" && window.innerWidth >= 1024;
-
   return (
     <div className="relative min-h-screen bg-[#080808] font-sans text-white">
       <NoiseOverlay />
@@ -244,12 +146,7 @@ export default function App() {
         <HeroSection
           isMobile={isMobile}
           HeroScene={HeroScene}
-          heroSectionRef={heroSectionRef}
-          heroLineRefs={heroLineRefs}
-          heroSubtextRef={heroSubtextRef}
-          heroCtasRef={heroCtasRef}
           scrollToId={scrollToId}
-          animateHero={animateHero}   // ← NEW prop
         />
         <AboutSection />
         <SkillsSection />

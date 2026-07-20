@@ -118,12 +118,7 @@ function ScrollIndicator() {
 export default function HeroSection({
   isMobile,
   HeroScene,
-  heroSectionRef,
-  heroLineRefs,
-  heroSubtextRef,
-  heroCtasRef,
   scrollToId,
-  animateHero = false, // true only on desktop (≥1024px) — drives initial hidden state
 }) {
   const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 });
 
@@ -134,23 +129,9 @@ export default function HeroSection({
     return () => window.removeEventListener("mousemove", onMove);
   }, []);
 
-  // ── Initial styles ────────────────────────────────────────────────────────
-  // animateHero=true  → element starts hidden (GSAP will reveal it step-by-step)
-  // animateHero=false → element starts fully visible (CSS fade-in instead)
-  const gsapInitial = animateHero
-    ? { opacity: 0, transform: "translateY(80px)", willChange: "transform, opacity" }
-    : {};
-
-  // CSS fade-up for non-animated (mobile/tablet) elements
-  const cssReveal = (delay = 0) =>
-    !animateHero
-      ? { opacity: 0, animation: `hFadeUp 0.6s cubic-bezier(0.22,1,0.36,1) ${delay}s forwards` }
-      : {};
-
   return (
     <section
       id="hero"
-      ref={heroSectionRef}
       className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-[#080808]"
     >
       {/* Background */}
@@ -173,7 +154,7 @@ export default function HeroSection({
       <GridLines />
       <GradientOrbs />
 
-      {/* Mouse parallax — desktop only to avoid pointless repaints on touch */}
+      {/* Mouse parallax — desktop only */}
       {!isMobile && (
         <div
           className="pointer-events-none absolute inset-0"
@@ -196,10 +177,10 @@ export default function HeroSection({
       <div className="relative z-10 w-full px-5 pt-24 md:px-10 md:pt-28 lg:px-16">
         <div className="flex w-full max-w-[1100px] flex-col gap-5 md:gap-7">
 
-          {/* EYEBROW — always CSS-only */}
+          {/* EYEBROW */}
           <div
             className="flex items-center gap-3"
-            style={{ opacity: 0, animation: "hFadeUp 0.55s cubic-bezier(0.22,1,0.36,1) 0.1s forwards" }}
+            style={{ opacity: 0, animation: "hFadeUp 0.65s cubic-bezier(0.16,1,0.3,1) 0.1s forwards" }}
           >
             <span className="h-px w-8 bg-[#3b82f6]/60" />
             <span className="font-mono text-[10px] font-semibold tracking-[0.3em] text-[#3b82f6]/70 uppercase sm:text-[11px]">
@@ -210,26 +191,20 @@ export default function HeroSection({
           {/* HEADLINE LINES */}
           <div className="flex flex-col gap-0 md:gap-1">
             {[
-              { text: "Hi, I'm Akshay.", idx: 0 },
-              { text: "MERN Stack",      idx: 1 },
-              { text: "Developer.",      idx: 2 },
-            ].map(({ text, idx }) => (
+              { text: "Hi, I'm Akshay.", idx: 0, delay: "0.2s" },
+              { text: "MERN Stack",      idx: 1, delay: "0.32s" },
+              { text: "Developer.",      idx: 2, delay: "0.44s" },
+            ].map(({ text, idx, delay }) => (
               <h1
                 key={idx}
-                ref={(el) => { heroLineRefs.current[idx] = el; }}
                 className="font-display tracking-tight text-white"
                 style={{
                   fontSize: "clamp(38px, 9vw, 108px)",
                   fontWeight: 700,
                   lineHeight: 0.92,
                   letterSpacing: "-0.025em",
-                  // line0 always visible; lines 1+2 depend on animateHero
-                  ...(idx === 0
-                    ? { opacity: 1, transform: "translateY(0px)", willChange: "transform, opacity" }
-                    : animateHero
-                      ? gsapInitial
-                      : cssReveal(0.1 + idx * 0.12)   // staggered CSS reveal on mobile
-                  ),
+                  opacity: 0,
+                  animation: `hFadeUp 0.65s cubic-bezier(0.16,1,0.3,1) ${delay} forwards`,
                 }}
               >
                 {idx === 1 ? (
@@ -249,9 +224,8 @@ export default function HeroSection({
 
           {/* SUBTEXT */}
           <p
-            ref={heroSubtextRef}
             className="max-w-[50rem] font-sans text-[13px] leading-relaxed text-zinc-400 md:text-[15px]"
-            style={animateHero ? gsapInitial : cssReveal(0.45)}
+            style={{ opacity: 0, animation: "hFadeUp 0.65s cubic-bezier(0.16,1,0.3,1) 0.56s forwards" }}
           >
             Building{" "}
             <span className="text-[#3b82f6]/80 font-medium">full-stack</span> products with{" "}
@@ -263,9 +237,8 @@ export default function HeroSection({
 
           {/* CTAs */}
           <div
-            ref={heroCtasRef}
             className="flex flex-col gap-3 sm:flex-row sm:items-center"
-            style={animateHero ? gsapInitial : cssReveal(0.55)}
+            style={{ opacity: 0, animation: "hFadeUp 0.65s cubic-bezier(0.16,1,0.3,1) 0.68s forwards" }}
           >
             <MagneticButton primary onClick={() => scrollToId("work")}>
               <span className="mr-2">View My Work</span>
@@ -281,10 +254,10 @@ export default function HeroSection({
             </MagneticButton>
           </div>
 
-          {/* STATS — always CSS-only */}
+          {/* STATS */}
           <div
             className="mt-2 flex items-center gap-5 border-t border-white/[0.06] pt-5 sm:gap-8"
-            style={{ opacity: 0, animation: "hFadeUp 0.6s cubic-bezier(0.22,1,0.36,1) 0.4s forwards" }}
+            style={{ opacity: 0, animation: "hFadeUp 0.65s cubic-bezier(0.16,1,0.3,1) 0.8s forwards" }}
           >
             <StatPill value="3+" label="Projects shipped" />
             <div className="h-8 w-px bg-white/10" />
@@ -300,7 +273,7 @@ export default function HeroSection({
 
       <style>{`
         @keyframes hFadeUp {
-          from { opacity: 0; transform: translateY(18px); }
+          from { opacity: 0; transform: translateY(24px); }
           to   { opacity: 1; transform: translateY(0); }
         }
       `}</style>
