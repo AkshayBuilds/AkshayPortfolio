@@ -1,4 +1,26 @@
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
+import gsap from "gsap";
+
+/* ─── Helper: wrap each character in a span for per-char animation ─── */
+function SplitChars({ children, className, style }) {
+  const text = typeof children === "string" ? children : "";
+  return (
+    <span className={className} style={style}>
+      {text.split("").map((char, i) => (
+        <span
+          key={i}
+          className="hero-char"
+          style={{
+            display: "inline-block",
+            willChange: "transform, opacity, filter",
+          }}
+        >
+          {char === " " ? "\u00A0" : char}
+        </span>
+      ))}
+    </span>
+  );
+}
 
 function GradientOrbs() {
   return (
@@ -17,7 +39,7 @@ function GradientOrbs() {
 
 function GridLines() {
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{opacity:0.035}}>
+    <div data-anim="grid" className="absolute inset-0 overflow-hidden pointer-events-none" style={{opacity:0.035}}>
       <svg width="100%" height="100%">
         <defs>
           <pattern id="hero-grid" width="80" height="80" patternUnits="userSpaceOnUse">
@@ -33,6 +55,7 @@ function GridLines() {
 function FloatingBadge({ children, style, delay = 0 }) {
   return (
     <div
+      data-anim="badge"
       className="pointer-events-none absolute hidden lg:flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 backdrop-blur-md"
       style={{ animation:`badgeFloat 6s ease-in-out ${delay}s infinite`, ...style }}
     >
@@ -103,7 +126,7 @@ function StatPill({ value, label }) {
 function ScrollIndicator() {
   return (
     // Only shown on large screens where the pin/scroll effect is active
-    <div className="absolute bottom-8 left-1/2 z-10 -translate-x-1/2 pointer-events-none hidden lg:block">
+    <div data-anim="scroll-indicator" className="absolute bottom-8 left-1/2 z-10 -translate-x-1/2 pointer-events-none hidden lg:block">
       <div className="flex flex-col items-center gap-3">
         <span className="font-mono text-[10px] font-semibold tracking-[0.35em] text-white/30 uppercase">Scroll</span>
         <div className="relative h-10 w-[1.5px] overflow-hidden rounded-full" style={{background:"rgba(255,255,255,0.08)"}}>
@@ -119,8 +142,11 @@ export default function HeroSection({
   isMobile,
   HeroScene,
   scrollToId,
+  animationReady = false,
 }) {
   const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 });
+  const sectionRef = useRef(null);
+  const tlRef = useRef(null);
 
   useEffect(() => {
     const onMove = (e) =>
@@ -129,13 +155,147 @@ export default function HeroSection({
     return () => window.removeEventListener("mousemove", onMove);
   }, []);
 
+  /* ── Set initial hidden state (runs before paint) ── */
+  useLayoutEffect(() => {
+    const section = sectionRef.current;
+    if (!section) return;
+
+    const ctx = gsap.context(() => {
+      // Grid — start fully transparent
+      gsap.set('[data-anim="grid"]', { opacity: 0 });
+
+      // Eyebrow
+      gsap.set('[data-anim="eyebrow"]', { y: 20, opacity: 0 });
+
+      // All headline characters
+      gsap.set(".hero-char", { y: 30, opacity: 0, filter: "blur(4px)" });
+
+      // Subtext
+      gsap.set('[data-anim="subtext"]', { y: 20, opacity: 0 });
+
+      // CTA buttons
+      gsap.set('[data-anim="ctas"]', { scale: 0.9, opacity: 0 });
+
+      // Stats children
+      gsap.set('[data-anim="stats"] > *', { y: 15, opacity: 0 });
+
+      // 3D scene wrapper
+      gsap.set('[data-anim="scene"]', { scale: 0.8, opacity: 0 });
+
+      // Floating badges
+      gsap.set('[data-anim="badge"]', { opacity: 0 });
+
+      // Scroll indicator
+      gsap.set('[data-anim="scroll-indicator"]', { opacity: 0 });
+    }, section);
+
+    return () => ctx.revert();
+  }, []);
+
+  /* ── Master reveal timeline — fires when loader finishes ── */
+  useEffect(() => {
+    if (!animationReady) return;
+    const section = sectionRef.current;
+    if (!section) return;
+
+    const ctx = gsap.context(() => {
+      const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+      tlRef.current = tl;
+
+      // Background grid fades in
+      tl.to(
+        '[data-anim="grid"]',
+        { opacity: 0.035, duration: 1.2, ease: "power2.out" },
+        0
+      );
+
+      // 3D Scene scales in
+      tl.to(
+        '[data-anim="scene"]',
+        { scale: 1, opacity: 1, duration: 1.4, ease: "power2.out" },
+        0.1
+      );
+
+      // Eyebrow
+      tl.to(
+        '[data-anim="eyebrow"]',
+        { y: 0, opacity: 1, duration: 0.7 },
+        0.15
+      );
+
+      // Headlines — per-character stagger with blur-to-sharp
+      const headlineGroups = section.querySelectorAll('[data-anim^="headline-"]');
+      headlineGroups.forEach((group, i) => {
+        const chars = group.querySelectorAll(".hero-char");
+        if (chars.length === 0) return;
+        tl.to(
+          chars,
+          {
+            y: 0,
+            opacity: 1,
+            filter: "blur(0px)",
+            duration: 0.8,
+            stagger: 0.02,
+            ease: "power3.out",
+          },
+          0.25 + i * 0.15
+        );
+      });
+
+      // Subtext
+      tl.to(
+        '[data-anim="subtext"]',
+        { y: 0, opacity: 1, duration: 0.7 },
+        0.65
+      );
+
+      // CTA buttons — slight bounce
+      tl.to(
+        '[data-anim="ctas"]',
+        { scale: 1, opacity: 1, duration: 0.6, ease: "back.out(1.4)" },
+        0.75
+      );
+
+      // Stats — stagger children
+      tl.to(
+        '[data-anim="stats"] > *',
+        { y: 0, opacity: 1, duration: 0.5, stagger: 0.1, ease: "power2.out" },
+        0.85
+      );
+
+      // Floating badges — stagger in
+      tl.to(
+        '[data-anim="badge"]',
+        { opacity: 1, duration: 0.6, stagger: 0.15, ease: "power2.out" },
+        0.95
+      );
+
+      // Scroll indicator — last
+      tl.to(
+        '[data-anim="scroll-indicator"]',
+        { opacity: 1, duration: 0.5, ease: "power2.out" },
+        1.2
+      );
+
+      // Cleanup will-change after all animations complete
+      tl.call(() => {
+        section.querySelectorAll(".hero-char").forEach((el) => {
+          el.style.willChange = "auto";
+        });
+      });
+    }, section);
+
+    return () => ctx.revert();
+  }, [animationReady]);
+
   return (
     <section
+      ref={sectionRef}
       id="hero"
       className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-[#080808]"
     >
       {/* Background */}
-      <div className="absolute inset-0">
+      <div className="absolute inset-0" data-anim="scene">
         {isMobile ? (
           <div className="h-full w-full" style={{
             background: "radial-gradient(ellipse at 30% 20%, #1e3a8a18 0%, transparent 60%), radial-gradient(ellipse at 80% 80%, #0ea5e910 0%, transparent 60%), #080808"
@@ -179,8 +339,8 @@ export default function HeroSection({
 
           {/* EYEBROW */}
           <div
+            data-anim="eyebrow"
             className="flex items-center gap-3"
-            style={{ opacity: 0, animation: "hFadeUp 0.65s cubic-bezier(0.16,1,0.3,1) 0.1s forwards" }}
           >
             <span className="h-px w-8 bg-[#3b82f6]/60" />
             <span className="font-mono text-[10px] font-semibold tracking-[0.3em] text-[#3b82f6]/70 uppercase sm:text-[11px]">
@@ -191,41 +351,42 @@ export default function HeroSection({
           {/* HEADLINE LINES */}
           <div className="flex flex-col gap-0 md:gap-1">
             {[
-              { text: "Hi, I'm Akshay.", idx: 0, delay: "0.2s" },
-              { text: "MERN Stack",      idx: 1, delay: "0.32s" },
-              { text: "Developer.",      idx: 2, delay: "0.44s" },
-            ].map(({ text, idx, delay }) => (
+              { text: "Hi, I'm Akshay.", idx: 0 },
+              { text: null,              idx: 1 },   /* custom render for MERN Stack */
+              { text: "Developer.",      idx: 2 },
+            ].map(({ text, idx }) => (
               <h1
                 key={idx}
+                data-anim={`headline-${idx}`}
                 className="font-display tracking-tight text-white"
                 style={{
                   fontSize: "clamp(38px, 9vw, 108px)",
                   fontWeight: 700,
                   lineHeight: 0.92,
                   letterSpacing: "-0.025em",
-                  opacity: 0,
-                  animation: `hFadeUp 0.65s cubic-bezier(0.16,1,0.3,1) ${delay} forwards`,
                 }}
               >
                 {idx === 1 ? (
                   <>
-                    <span>MERN</span>
+                    <SplitChars>MERN</SplitChars>
                     <span className="ml-3 md:ml-4" style={{
                       WebkitTextStroke: "1px rgba(255,255,255,0.18)",
                       WebkitTextFillColor: "transparent",
                     }}>
-                      Stack
+                      <SplitChars>Stack</SplitChars>
                     </span>
                   </>
-                ) : text}
+                ) : (
+                  <SplitChars>{text}</SplitChars>
+                )}
               </h1>
             ))}
           </div>
 
           {/* SUBTEXT */}
           <p
+            data-anim="subtext"
             className="max-w-[50rem] font-sans text-[13px] leading-relaxed text-zinc-400 md:text-[15px]"
-            style={{ opacity: 0, animation: "hFadeUp 0.65s cubic-bezier(0.16,1,0.3,1) 0.56s forwards" }}
           >
             Building{" "}
             <span className="text-[#3b82f6]/80 font-medium">full-stack</span> products with{" "}
@@ -237,8 +398,8 @@ export default function HeroSection({
 
           {/* CTAs */}
           <div
+            data-anim="ctas"
             className="flex flex-col gap-3 sm:flex-row sm:items-center"
-            style={{ opacity: 0, animation: "hFadeUp 0.65s cubic-bezier(0.16,1,0.3,1) 0.68s forwards" }}
           >
             <MagneticButton primary onClick={() => scrollToId("work")}>
               <span className="mr-2">View My Work</span>
@@ -256,8 +417,8 @@ export default function HeroSection({
 
           {/* STATS */}
           <div
+            data-anim="stats"
             className="mt-2 flex items-center gap-5 border-t border-white/[0.06] pt-5 sm:gap-8"
-            style={{ opacity: 0, animation: "hFadeUp 0.65s cubic-bezier(0.16,1,0.3,1) 0.8s forwards" }}
           >
             <StatPill value="3+" label="Projects shipped" />
             <div className="h-8 w-px bg-white/10" />
@@ -270,13 +431,6 @@ export default function HeroSection({
       </div>
 
       <ScrollIndicator />
-
-      <style>{`
-        @keyframes hFadeUp {
-          from { opacity: 0; transform: translateY(24px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
     </section>
   );
 }

@@ -1,3 +1,5 @@
+import { useEffect, useLayoutEffect, useRef } from "react";
+import gsap from "gsap";
 import LogoMark from "../ui/LogoMark.jsx";
 
 function NavLink({ label, targetId, onClick }) {
@@ -34,12 +36,34 @@ function IconHamburger({ open }) {
   );
 }
 
-export default function Header({ navSolid, menuOpen, setMenuOpen, scrollToId }) {
+export default function Header({ navSolid, menuOpen, setMenuOpen, scrollToId, animationReady = false }) {
+  const headerRef = useRef(null);
+
+  /* Set initial hidden state before paint */
+  useLayoutEffect(() => {
+    if (headerRef.current) {
+      gsap.set(headerRef.current, { y: -30, opacity: 0 });
+    }
+  }, []);
+
+  /* Animate in when loader completes */
+  useEffect(() => {
+    if (!animationReady || !headerRef.current) return;
+    gsap.to(headerRef.current, {
+      y: 0,
+      opacity: 1,
+      duration: 0.8,
+      ease: "power3.out",
+    });
+  }, [animationReady]);
+
   return (
     <header
+      ref={headerRef}
       className={`fixed left-0 top-0 z-50 w-full transition-all duration-300 ${
         navSolid ? "bg-black/55 backdrop-blur-md" : "bg-transparent"
       }`}
+      style={{ willChange: "transform, opacity" }}
     >
       <div className="relative w-full px-5 py-4 md:px-10 lg:px-14">
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />

@@ -24,6 +24,7 @@ export default function App() {
   const [navSolid, setNavSolid] = useState(false);
   const [toast, setToast] = useState(null);
 
+
   const projects = useMemo(
     () => [
       {
@@ -135,11 +136,13 @@ export default function App() {
   return (
     <div className="relative min-h-screen bg-[#080808] font-sans text-white">
       <NoiseOverlay />
+
       <Header
         navSolid={navSolid}
         menuOpen={menuOpen}
         setMenuOpen={setMenuOpen}
         scrollToId={scrollToId}
+        animationReady
       />
 
       <main className="relative">
@@ -147,6 +150,7 @@ export default function App() {
           isMobile={isMobile}
           HeroScene={HeroScene}
           scrollToId={scrollToId}
+          animationReady
         />
         <AboutSection />
         <SkillsSection />
