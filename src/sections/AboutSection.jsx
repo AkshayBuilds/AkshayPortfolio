@@ -1,136 +1,211 @@
-import { useEffect, useRef } from "react";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import TypingCard from "../components/about/TypingCard.jsx";
-import Container from "../components/layout/Container.jsx";
-import Pill from "../components/ui/Pill.jsx";
+import { motion } from "framer-motion";
 
-gsap.registerPlugin(ScrollTrigger);
+// ─── Animation variants ─────────────────────────────────────────────────────
+const fadeUp = (delay = 0) => ({
+  initial: { opacity: 0, y: 40 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, margin: "-80px" },
+  transition: {
+    delay,
+    duration: 0.8,
+    ease: [0.25, 0.46, 0.45, 0.94],
+  },
+});
+
+const statVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: (i) => ({
+    opacity: 1,
+    y: 0,
+    transition: {
+      delay: 0.3 + i * 0.1,
+      duration: 0.6,
+      ease: [0.25, 0.46, 0.45, 0.94],
+    },
+  }),
+};
 
 export default function AboutSection() {
-  const sectionRef = useRef(null);
-  const headingRef = useRef(null);
-  const paraRef = useRef(null);
-  const cardRef = useRef(null);
-
-  useEffect(() => {
-    const heading = headingRef.current;
-    const para = paraRef.current;
-    const card = cardRef.current;
-
-    if (!heading || !para || !card) return;
-
-    // Hide everything immediately — before any scroll trigger fires
-    gsap.set([heading, para], { opacity: 0, y: 100 });
-    gsap.set(card, { opacity: 0, scale: 0.9, y: 120 });
-
-    let ctx;
-
-    // Delay registration so Lenis + hero pin finish calculating scroll space first
-    const timer = window.setTimeout(() => {
-      ctx = gsap.context(() => {
-        const tl = gsap.timeline({
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: "top 65%",
-            toggleActions: "play none none none",
-            refreshPriority: -1,   // register after hero pin
-          },
-        });
-
-        tl.to(heading, { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" })
-          .to(para,    { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" }, "-=0.4")
-          .to(card,    { opacity: 1, y: 0, scale: 1, duration: 1, ease: "power3.out" }, "-=0.5");
-
-        // parallax on card
-        gsap.to(card, {
-          y: -60,
-          ease: "none",
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: "top bottom",
-            end: "bottom top",
-            scrub: true,
-            refreshPriority: -1,
-          },
-        });
-      }, sectionRef);
-    }, 350); // wait for Lenis + ScrollTrigger.refresh() to settle
-
-    return () => {
-      window.clearTimeout(timer);
-      ctx?.revert();
-    };
-  }, []);
-
   return (
-    <section
-      ref={sectionRef}
-      id="about"
-      className="relative w-full bg-[#0d0d0d] py-40 overflow-hidden"
-    >
-      {/* BIG BACKGROUND TEXT */}
-      <div className="pointer-events-none absolute inset-0 flex items-start justify-center">
-        <h1 className="text-[18vw] font-black text-white/5 tracking-tight">
-          ABOUT
-        </h1>
-      </div>
+    <>
+      <style>{`
+        /* ─── Section ─── */
+        .about-section {
+          position: relative;
+          width: 100%;
+          background: #080808;
+          padding: 6rem 1.25rem;
+          overflow: hidden;
+        }
+        @media (min-width: 640px) {
+          .about-section { padding: 8rem 2rem; }
+        }
+        @media (min-width: 768px) {
+          .about-section { padding: 10rem 2.5rem; }
+        }
 
-      {/* glow */}
-      <div className="absolute left-1/2 top-24 -translate-x-1/2 h-[400px] w-[400px] bg-blue-500/10 blur-[120px]" />
+        /* ─── Inner container ─── */
+        .about-inner {
+          max-width: 64rem;
+          margin: 0 auto;
+        }
 
-      <Container>
-        <div className="grid grid-cols-1 items-center gap-16 md:grid-cols-2">
+        /* ─── Badge ─── */
+        .about-badge {
+          display: inline-block;
+          font-size: 11px;
+          font-weight: 600;
+          letter-spacing: 0.2em;
+          text-transform: uppercase;
+          color: rgba(215, 226, 234, 0.45);
+          margin-bottom: 1.5rem;
+        }
 
-          {/* LEFT */}
-          <div className="flex flex-col gap-8">
-            <h2
-              ref={headingRef}
-              className="font-display text-[48px] font-bold leading-tight md:text-[68px]"
-            >
-              I build <span className="text-[#3b82f6]">modern</span> web
-              experiences.
-            </h2>
+        /* ─── Heading ─── */
+        .about-heading {
+          font-size: clamp(2rem, 5vw, 4rem);
+          font-weight: 700;
+          color: #D7E2EA;
+          line-height: 1.15;
+          letter-spacing: -0.03em;
+          margin: 0 0 2rem;
+          max-width: 48rem;
+        }
+        .about-heading-accent {
+          background: linear-gradient(180deg, #646973 0%, #BBCCD7 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
 
-            <p
-              ref={paraRef}
-              className="max-w-xl text-[17px] text-zinc-400 leading-relaxed"
-            >
-              I'm a MERN Stack Developer focused on creating scalable,
-              production-ready applications with smooth UI/UX. From frontend
-              interactions to backend architecture, I craft complete digital
-              experiences.
-            </p>
+        /* ─── Description ─── */
+        .about-description {
+          font-size: clamp(0.95rem, 1.6vw, 1.2rem);
+          font-weight: 300;
+          line-height: 1.8;
+          color: rgba(215, 226, 234, 0.5);
+          max-width: 38rem;
+          margin: 0 0 3rem;
+        }
 
-            <div className="flex flex-wrap gap-3">
-              <Pill>React</Pill>
-              <Pill>Node.js</Pill>
-              <Pill>MongoDB</Pill>
-              <Pill>Express</Pill>
-            </div>
-          </div>
+        /* ─── Divider ─── */
+        .about-divider {
+          width: 100%;
+          height: 1px;
+          background: rgba(215, 226, 234, 0.08);
+          margin: 0 0 3rem;
+        }
 
-          {/* RIGHT */}
-          <div
-            ref={cardRef}
-            className="relative rounded-2xl border border-blue-500/20 bg-black/40 p-6 backdrop-blur-md shadow-[0_0_40px_#3b82f640]"
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-transparent to-purple-500/10" />
+        /* ─── Stats row ─── */
+        .about-stats {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 2rem;
+        }
+        @media (min-width: 640px) {
+          .about-stats {
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2.5rem;
+          }
+        }
 
-            <div className="relative flex items-center justify-between mb-4">
-              <div className="flex gap-2">
-                <div className="h-2.5 w-2.5 rounded-full bg-red-500" />
-                <div className="h-2.5 w-2.5 rounded-full bg-yellow-500" />
-                <div className="h-2.5 w-2.5 rounded-full bg-green-500" />
-              </div>
-              <span className="text-xs text-white/50">akshay@dev</span>
-            </div>
+        /* ─── Individual stat ─── */
+        .about-stat {
+          display: flex;
+          flex-direction: column;
+          gap: 0.4rem;
+        }
+        .about-stat-value {
+          font-size: clamp(2rem, 4vw, 3.5rem);
+          font-weight: 800;
+          color: #D7E2EA;
+          letter-spacing: -0.03em;
+          line-height: 1;
+        }
+        .about-stat-label {
+          font-size: 12px;
+          font-weight: 500;
+          letter-spacing: 0.15em;
+          text-transform: uppercase;
+          color: rgba(215, 226, 234, 0.3);
+        }
 
-            <TypingCard />
+        /* ─── Separator line between stats ─── */
+        .about-stat-sep {
+          display: none;
+        }
+        @media (min-width: 640px) {
+          .about-stat-sep {
+            display: block;
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background: rgba(215, 226, 234, 0.08);
+          }
+        }
+
+        .about-stat-wrap {
+          position: relative;
+        }
+      `}</style>
+
+      <section id="about" className="about-section">
+        <div className="about-inner">
+
+          {/* Badge */}
+          <motion.span className="about-badge" {...fadeUp(0)}>
+            About Me
+          </motion.span>
+
+          {/* Heading */}
+          <motion.h2 className="about-heading" {...fadeUp(0.1)}>
+            I build{" "}
+            <span className="about-heading-accent">modern</span> web
+            experiences that are scalable, performant and production-ready.
+          </motion.h2>
+
+          {/* Description */}
+          <motion.p className="about-description" {...fadeUp(0.2)}>
+            I&apos;m a MERN Stack Developer focused on creating complete digital
+            products — from interactive React frontends to secure Node.js
+            backends with MongoDB. I care deeply about clean architecture,
+            smooth user experiences and shipping code that actually works
+            at scale.
+          </motion.p>
+
+          {/* Divider */}
+          <motion.div className="about-divider" {...fadeUp(0.25)} />
+
+          {/* Stats */}
+          <div className="about-stats">
+            {[
+              { value: "3+", label: "Projects Shipped" },
+              { value: "MERN", label: "Core Stack" },
+              { value: "4mo", label: "Experience" },
+              { value: "∞", label: "Problems Solved" },
+            ].map((stat, i) => (
+              <motion.div
+                key={stat.label}
+                className="about-stat-wrap"
+                custom={i}
+                variants={statVariants}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, margin: "-60px" }}
+              >
+                <div className="about-stat">
+                  <span className="about-stat-value">{stat.value}</span>
+                  <span className="about-stat-label">{stat.label}</span>
+                </div>
+                {i < 3 && <span className="about-stat-sep" />}
+              </motion.div>
+            ))}
           </div>
 
         </div>
-      </Container>
-    </section>
+      </section>
+    </>
   );
 }
