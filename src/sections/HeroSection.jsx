@@ -1,436 +1,585 @@
-import { Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
-import gsap from "gsap";
+import { useRef, useEffect, useState } from "react";
+import { motion } from "framer-motion";
 
-/* ─── Helper: wrap each character in a span for per-char animation ─── */
-function SplitChars({ children, className, style }) {
-  const text = typeof children === "string" ? children : "";
-  return (
-    <span className={className} style={style}>
-      {text.split("").map((char, i) => (
-        <span
-          key={i}
-          className="hero-char"
-          style={{
-            display: "inline-block",
-            willChange: "transform, opacity, filter",
-          }}
-        >
-          {char === " " ? "\u00A0" : char}
-        </span>
-      ))}
-    </span>
-  );
-}
+// ─── Magnet Component ────────────────────────────────────────────────────────
+function Magnet({
+  children,
+  padding = 150,
+  strength = 3,
+  activeTransition = "transform 0.3s ease-out",
+  inactiveTransition = "transform 0.6s ease-in-out",
+}) {
+  const ref = useRef(null);
 
-function GradientOrbs() {
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    const onMove = (e) => {
+      const rect = el.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const dx = e.clientX - cx;
+      const dy = e.clientY - cy;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const maxDist = Math.max(rect.width, rect.height) / 2 + padding;
+
+      if (dist < maxDist) {
+        const factor = (1 - dist / maxDist) * strength;
+        el.style.transition = activeTransition;
+        el.style.transform = `translate(${dx * factor * 0.15}px, ${dy * factor * 0.15}px)`;
+      } else {
+        el.style.transition = inactiveTransition;
+        el.style.transform = "translate(0px, 0px)";
+      }
+    };
+
+    const onLeave = () => {
+      el.style.transition = inactiveTransition;
+      el.style.transform = "translate(0px, 0px)";
+    };
+
+    window.addEventListener("mousemove", onMove, { passive: true });
+    window.addEventListener("mouseleave", onLeave);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseleave", onLeave);
+    };
+  }, [padding, strength, activeTransition, inactiveTransition]);
+
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      <div className="absolute rounded-full" style={{ width:"70vw",height:"70vw",maxWidth:900,maxHeight:900,top:"-20%",left:"-10%",background:"radial-gradient(circle at 40% 40%, #1e3a8a18 0%, #3b82f610 40%, transparent 70%)",animation:"orb1 18s ease-in-out infinite",filter:"blur(40px)" }}/>
-      <div className="absolute rounded-full" style={{ width:"50vw",height:"50vw",maxWidth:700,maxHeight:700,bottom:"-10%",right:"-5%",background:"radial-gradient(circle at 60% 60%, #0ea5e912 0%, #6366f10c 50%, transparent 70%)",animation:"orb2 22s ease-in-out infinite",filter:"blur(50px)" }}/>
-      <div className="absolute rounded-full" style={{ width:"30vw",height:"30vw",maxWidth:500,maxHeight:500,top:"30%",right:"20%",background:"radial-gradient(circle, #3b82f60a 0%, transparent 70%)",animation:"orb3 14s ease-in-out infinite",filter:"blur(30px)" }}/>
-      <style>{`
-        @keyframes orb1{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(4vw,6vh) scale(1.08)}66%{transform:translate(-3vw,3vh) scale(0.95)}}
-        @keyframes orb2{0%,100%{transform:translate(0,0) scale(1)}40%{transform:translate(-5vw,-4vh) scale(1.1)}70%{transform:translate(3vw,5vh) scale(0.92)}}
-        @keyframes orb3{0%,100%{transform:translate(0,0) scale(1);opacity:0.6}50%{transform:translate(2vw,-3vh) scale(1.15);opacity:1}}
-      `}</style>
+    <div ref={ref} style={{ willChange: "transform" }}>
+      {children}
     </div>
   );
 }
 
-function GridLines() {
+// ─── Contact Button ──────────────────────────────────────────────────────────
+function ContactButton({ scrollToId }) {
   return (
-    <div data-anim="grid" className="absolute inset-0 overflow-hidden pointer-events-none" style={{opacity:0.035}}>
-      <svg width="100%" height="100%">
-        <defs>
-          <pattern id="hero-grid" width="80" height="80" patternUnits="userSpaceOnUse">
-            <path d="M 80 0 L 0 0 0 80" fill="none" stroke="white" strokeWidth="0.5"/>
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#hero-grid)"/>
-      </svg>
-    </div>
-  );
-}
-
-function FloatingBadge({ children, style, delay = 0 }) {
-  return (
-    <div
-      data-anim="badge"
-      className="pointer-events-none absolute hidden lg:flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 backdrop-blur-md"
-      style={{ animation:`badgeFloat 6s ease-in-out ${delay}s infinite`, ...style }}
+    <button
+      type="button"
+      onClick={() => scrollToId("contact")}
+      className="hero-contact-btn"
     >
-      <span className="text-[11px] font-mono font-medium tracking-widest text-white/40">{children}</span>
-      <style>{`@keyframes badgeFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}`}</style>
-    </div>
+      <span className="hero-contact-btn-text">Let&apos;s Talk</span>
+      <span className="hero-contact-btn-arrow">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="7" y1="17" x2="17" y2="7" />
+          <polyline points="7 7 17 7 17 17" />
+        </svg>
+      </span>
+    </button>
   );
 }
 
-function MagneticButton({ children, onClick, href, primary = false }) {
-  const ref    = useRef(null);
-  const rafRef = useRef(null);
+// ─── FadeIn wrapper ──────────────────────────────────────────────────────────
+function FadeIn({ children, delay = 0, y = 30, x = 0, className = "" }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y, x }}
+      animate={{ opacity: 1, y: 0, x: 0 }}
+      transition={{
+        delay,
+        duration: 0.8,
+        ease: [0.25, 0.46, 0.45, 0.94],
+      }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+}
 
-  const onMove = (e) => {
-    const r = ref.current?.getBoundingClientRect();
-    if (!r) return;
-    const dx   = e.clientX - (r.left + r.width / 2);
-    const dy   = e.clientY - (r.top + r.height / 2);
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    const s    = dist < 80 ? ((80 - dist) / 80) * 0.35 : 0;
-    cancelAnimationFrame(rafRef.current);
-    rafRef.current = requestAnimationFrame(() => {
-      if (ref.current) ref.current.style.transform = `translate(${dx * s}px,${dy * s}px)`;
-    });
-  };
+// ─── Main Hero Section ───────────────────────────────────────────────────────
+export default function HeroSection({ scrollToId }) {
+  const [imgLoaded, setImgLoaded] = useState(false);
 
-  const onLeave = () => {
-    if (!ref.current) return;
-    ref.current.style.transition = "transform 0.5s cubic-bezier(0.23,1,0.32,1)";
-    ref.current.style.transform  = "translate(0px,0px)";
-    setTimeout(() => { if (ref.current) ref.current.style.transition = ""; }, 500);
-  };
-
-  const base = "relative inline-flex min-h-[50px] items-center justify-center rounded-xl px-7 py-3 font-sans text-[13px] font-semibold tracking-wide transition-all duration-200 active:scale-[0.97] select-none cursor-pointer";
-  const pCls = " text-white hover:shadow-[0_0_40px_#3b82f660]";
-  const gCls = " border border-white/15 bg-transparent text-white/80 hover:text-white hover:border-white/30 hover:bg-white/[0.04]";
-
-  const inner = (
+  return (
     <>
-      {primary && (
-        <span className="absolute inset-0 rounded-xl overflow-hidden">
-          <span className="absolute inset-0" style={{background:"linear-gradient(135deg,#3b82f6 0%,#2563eb 50%,#1d4ed8 100%)"}}/>
-        </span>
-      )}
-      <span className="relative">{children}</span>
+      <style>{`
+        /* ─── Section ─── */
+        .hero-ms {
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          height: 100vh;
+          height: 100dvh;
+          width: 100%;
+          background: #080808;
+          overflow-x: clip;
+          overflow-y: hidden;
+        }
+
+        /* ─── Navbar ─── */
+        .hero-nav {
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 1.5rem 1.5rem 0;
+          z-index: 30;
+          flex-shrink: 0;
+        }
+        @media (min-width: 768px) {
+          .hero-nav { padding: 2rem 2.5rem 0; }
+        }
+
+        .hero-nav-links {
+          display: flex;
+          align-items: center;
+          gap: 0.25rem;
+        }
+        @media (min-width: 768px) {
+          .hero-nav-links { gap: 0.5rem; }
+        }
+
+        .hero-nav-link {
+          font-size: 0.875rem;
+          font-weight: 500;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          color: #D7E2EA;
+          background: none;
+          border: none;
+          padding: 0.4rem 0.6rem;
+          cursor: pointer;
+          transition: opacity 200ms ease;
+        }
+        @media (min-width: 768px) {
+          .hero-nav-link { font-size: 1.125rem; padding: 0.4rem 0.75rem; }
+        }
+        @media (min-width: 1024px) {
+          .hero-nav-link { font-size: 1.4rem; padding: 0.4rem 1rem; }
+        }
+        .hero-nav-link:hover { opacity: 0.7; }
+
+        /* Social buttons */
+        .hero-nav-social {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+        .hero-nav-social-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 0.8rem;
+          font-weight: 500;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+          color: #D7E2EA;
+          background: none;
+          border: 1px solid rgba(215, 226, 234, 0.15);
+          border-radius: 100px;
+          padding: 0.45rem 1rem;
+          cursor: pointer;
+          transition: opacity 200ms ease, border-color 200ms ease;
+          text-decoration: none;
+        }
+        .hero-nav-social-btn:hover {
+          opacity: 0.7;
+          border-color: rgba(215, 226, 234, 0.3);
+        }
+        @media (max-width: 639px) {
+          .hero-nav-social-btn span { display: none; }
+          .hero-nav-social-btn { padding: 0.45rem 0.65rem; }
+        }
+
+        /* ─── Hero Heading ─── */
+        .hero-heading-wrap {
+          position: relative;
+          overflow: hidden;
+          z-index: 20;
+          margin-top: 1.5rem;
+          flex-shrink: 0;
+        }
+        @media (min-width: 640px) {
+          .hero-heading-wrap { margin-top: 1rem; }
+        }
+        @media (min-width: 768px) {
+          .hero-heading-wrap { margin-top: -1.25rem; }
+        }
+
+        .hero-h1 {
+          font-size: 14vw;
+          font-weight: 900;
+          text-transform: uppercase;
+          letter-spacing: -0.03em;
+          line-height: 0.9;
+          white-space: nowrap;
+          width: 100%;
+          text-align: center;
+          margin: 0;
+          /* Gradient text */
+          background: linear-gradient(180deg, #646973 0%, #BBCCD7 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+        @media (min-width: 640px) {
+          .hero-h1 { font-size: 8vw; }
+        }
+        @media (min-width: 768px) {
+          .hero-h1 { font-size: 10vw; }
+        }
+        @media (min-width: 1024px) {
+          .hero-h1 { font-size: 13vw; }
+        }
+
+        /* ─── Bottom Bar ─── */
+        .hero-bottom {
+          margin-top: auto;
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-end;
+          padding: 0 1.5rem 1.75rem;
+          z-index: 20;
+          flex-shrink: 0;
+        }
+        @media (min-width: 640px) {
+          .hero-bottom { padding: 0 2rem 2rem; }
+        }
+        @media (min-width: 768px) {
+          .hero-bottom { padding: 0 2.5rem 2.5rem; }
+        }
+
+        .hero-bottom-text {
+          color: #D7E2EA;
+          font-weight: 300;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          line-height: 1.375;
+          font-size: clamp(0.75rem, 1.4vw, 1.5rem);
+          max-width: 160px;
+        }
+        @media (min-width: 640px) {
+          .hero-bottom-text { max-width: 220px; }
+        }
+        @media (min-width: 768px) {
+          .hero-bottom-text { max-width: 260px; }
+        }
+
+        /* ─── Contact Button ─── */
+        .hero-contact-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 10px;
+          background: none;
+          border: 1px solid rgba(215, 226, 234, 0.2);
+          border-radius: 100px;
+          padding: 0.75rem 1.5rem;
+          cursor: pointer;
+          transition: border-color 300ms ease, background 300ms ease;
+        }
+        .hero-contact-btn:hover {
+          border-color: rgba(215, 226, 234, 0.4);
+          background: rgba(215, 226, 234, 0.05);
+        }
+        .hero-contact-btn-text {
+          font-size: clamp(0.85rem, 1.4vw, 1.25rem);
+          font-weight: 500;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          color: #D7E2EA;
+        }
+        .hero-contact-btn-arrow {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #D7E2EA;
+          transition: transform 300ms ease;
+        }
+        .hero-contact-btn:hover .hero-contact-btn-arrow {
+          transform: translate(2px, -2px);
+        }
+
+        /* ─── Portrait ─── */
+        .hero-portrait-wrap {
+          position: absolute;
+          left: 50%;
+          transform: translateX(-50%);
+          z-index: 10;
+          width: 280px;
+          /* Mobile: vertically centered */
+          top: 50%;
+          transform: translateX(-50%) translateY(-50%);
+          pointer-events: none;
+        }
+        @media (min-width: 640px) {
+          .hero-portrait-wrap {
+            width: 360px;
+            top: auto;
+            bottom: 0;
+            transform: translateX(-50%) translateY(0);
+          }
+        }
+        @media (min-width: 768px) {
+          .hero-portrait-wrap { width: 440px; }
+        }
+        @media (min-width: 1024px) {
+          .hero-portrait-wrap { width: 520px; }
+        }
+
+        .hero-portrait-img {
+          width: 100%;
+          height: auto;
+          display: block;
+          object-fit: contain;
+          pointer-events: auto;
+          user-select: none;
+          filter: grayscale(15%) contrast(1.05);
+        }
+
+        /* ─── Mobile nav toggle ─── */
+        .hero-nav-mobile-toggle {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 44px;
+          height: 44px;
+          background: none;
+          border: 1px solid rgba(215, 226, 234, 0.15);
+          border-radius: 12px;
+          cursor: pointer;
+          transition: border-color 200ms ease;
+        }
+        .hero-nav-mobile-toggle:hover {
+          border-color: rgba(215, 226, 234, 0.3);
+        }
+        @media (min-width: 768px) {
+          .hero-nav-mobile-toggle { display: none; }
+        }
+
+        .hero-nav-desktop {
+          display: none;
+        }
+        @media (min-width: 768px) {
+          .hero-nav-desktop { display: flex; }
+        }
+
+        /* Mobile menu overlay */
+        .hero-mobile-menu {
+          position: fixed;
+          inset: 0;
+          z-index: 100;
+          background: rgba(8, 8, 8, 0.95);
+          backdrop-filter: blur(20px);
+          display: flex;
+          flex-direction: column;
+          padding: 6rem 2rem 3rem;
+          gap: 0.5rem;
+        }
+        .hero-mobile-menu-link {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 1rem 1.25rem;
+          border: 1px solid rgba(215, 226, 234, 0.1);
+          border-radius: 16px;
+          background: rgba(215, 226, 234, 0.03);
+          color: #D7E2EA;
+          font-size: 1.125rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          cursor: pointer;
+          transition: background 200ms ease;
+        }
+        .hero-mobile-menu-link:hover {
+          background: rgba(215, 226, 234, 0.06);
+        }
+        .hero-mobile-close {
+          margin-top: auto;
+          padding: 1rem;
+          border: 1px solid rgba(215, 226, 234, 0.1);
+          border-radius: 16px;
+          background: none;
+          color: #D7E2EA;
+          font-size: 0.875rem;
+          font-weight: 600;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          cursor: pointer;
+        }
+      `}</style>
+
+      <section id="hero" className="hero-ms">
+
+        {/* ─── Navbar ─── */}
+        <FadeIn delay={0} y={-20}>
+          <Nav scrollToId={scrollToId} />
+        </FadeIn>
+
+        {/* ─── Hero Heading ─── */}
+        <FadeIn delay={0.15} y={40} className="hero-heading-wrap">
+          <h1 className="hero-h1">
+            Hi, i&apos;m Akshay
+          </h1>
+        </FadeIn>
+
+        {/* ─── Portrait (centered absolutely) ─── */}
+        <FadeIn delay={0.6} y={30}>
+          <div className="hero-portrait-wrap">
+            <Magnet
+              padding={150}
+              strength={3}
+              activeTransition="transform 0.3s ease-out"
+              inactiveTransition="transform 0.6s ease-in-out"
+            >
+              <img
+                src="https://shrug-person-78902957.figma.site/_components/v2/d24c01ad3a56fc65e942a1f501eb73db42d7cf9a/Rectangle_40443.81459862.png"
+                alt="Akshay Chaudhary portrait"
+                className="hero-portrait-img"
+                onLoad={() => setImgLoaded(true)}
+                loading="eager"
+                draggable={false}
+              />
+            </Magnet>
+          </div>
+        </FadeIn>
+
+        {/* ─── Bottom Bar ─── */}
+        <div className="hero-bottom">
+          <FadeIn delay={0.35} y={20}>
+            <p className="hero-bottom-text">
+              Building full-stack products with React Node.js MongoDB — shipping fast, built to scale.
+            </p>
+          </FadeIn>
+
+          <FadeIn delay={0.5} y={20}>
+            <ContactButton scrollToId={scrollToId} />
+          </FadeIn>
+        </div>
+
+      </section>
     </>
   );
-
-  return (
-    <div ref={ref} onMouseMove={onMove} onMouseLeave={onLeave} style={{display:"inline-block"}}>
-      {href
-        ? <a href={href} className={base + gCls}>{inner}</a>
-        : <button type="button" onClick={onClick} className={base + (primary ? pCls : gCls)}>{inner}</button>
-      }
-    </div>
-  );
 }
 
-function StatPill({ value, label }) {
-  return (
-    <div className="flex flex-col items-start gap-0.5">
-      <span className="font-mono text-[18px] font-bold text-white leading-none sm:text-[22px]">{value}</span>
-      <span className="text-[10px] font-medium tracking-widest text-white/35 uppercase sm:text-[11px]">{label}</span>
-    </div>
-  );
-}
+// ─── Nav sub-component ───────────────────────────────────────────────────────
+function Nav({ scrollToId }) {
+  const [menuOpen, setMenuOpen] = useState(false);
 
-function ScrollIndicator() {
+  const navItems = [
+    { label: "About", id: "about" },
+    { label: "Skills", id: "skills" },
+    { label: "Work", id: "work" },
+    { label: "Contact", id: "contact" },
+  ];
+
+  const handleNav = (id) => {
+    setMenuOpen(false);
+    scrollToId(id);
+  };
+
   return (
-    // Only shown on large screens where the pin/scroll effect is active
-    <div data-anim="scroll-indicator" className="absolute bottom-8 left-1/2 z-10 -translate-x-1/2 pointer-events-none hidden lg:block">
-      <div className="flex flex-col items-center gap-3">
-        <span className="font-mono text-[10px] font-semibold tracking-[0.35em] text-white/30 uppercase">Scroll</span>
-        <div className="relative h-10 w-[1.5px] overflow-hidden rounded-full" style={{background:"rgba(255,255,255,0.08)"}}>
-          <div className="absolute top-0 left-0 w-full rounded-full" style={{height:"40%",background:"linear-gradient(to bottom,transparent,rgba(59,130,246,0.7))",animation:"scrollLine 1.8s ease-in-out infinite"}}/>
+    <>
+      <nav className="hero-nav">
+        {/* Desktop links */}
+        <div className="hero-nav-desktop hero-nav-links">
+          {navItems.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className="hero-nav-link"
+              onClick={() => handleNav(item.id)}
+            >
+              {item.label}
+            </button>
+          ))}
         </div>
-        <style>{`@keyframes scrollLine{0%{transform:translateY(-100%);opacity:0}30%{opacity:1}100%{transform:translateY(350%);opacity:0}}`}</style>
-      </div>
-    </div>
-  );
-}
 
-export default function HeroSection({
-  isMobile,
-  HeroScene,
-  scrollToId,
-  animationReady = false,
-}) {
-  const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 });
-  const sectionRef = useRef(null);
-  const tlRef = useRef(null);
+        {/* Social buttons */}
+        <div className="hero-nav-desktop hero-nav-social">
+          <a
+            href="https://github.com/AkshayBuilds"
+            target="_blank"
+            rel="noreferrer"
+            className="hero-nav-social-btn"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.009-.868-.013-1.703-2.782.604-3.369-1.342-3.369-1.342-.454-1.154-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.532 1.03 1.532 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0 1 12 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z" />
+            </svg>
+            <span>GitHub</span>
+          </a>
+          <a
+            href="https://www.linkedin.com/in/akshay-web/"
+            target="_blank"
+            rel="noreferrer"
+            className="hero-nav-social-btn"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+            </svg>
+            <span>LinkedIn</span>
+          </a>
+        </div>
 
-  useEffect(() => {
-    const onMove = (e) =>
-      setMousePos({ x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight });
-    window.addEventListener("mousemove", onMove, { passive: true });
-    return () => window.removeEventListener("mousemove", onMove);
-  }, []);
+        {/* Mobile hamburger */}
+        <button
+          type="button"
+          className="hero-nav-mobile-toggle"
+          onClick={() => setMenuOpen(true)}
+          aria-label="Open menu"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D7E2EA" strokeWidth="2" strokeLinecap="round">
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
+        </button>
+      </nav>
 
-  /* ── Set initial hidden state (runs before paint) ── */
-  useLayoutEffect(() => {
-    const section = sectionRef.current;
-    if (!section) return;
-
-    const ctx = gsap.context(() => {
-      // Grid — start fully transparent
-      gsap.set('[data-anim="grid"]', { opacity: 0 });
-
-      // Eyebrow
-      gsap.set('[data-anim="eyebrow"]', { y: 20, opacity: 0 });
-
-      // All headline characters
-      gsap.set(".hero-char", { y: 30, opacity: 0, filter: "blur(4px)" });
-
-      // Subtext
-      gsap.set('[data-anim="subtext"]', { y: 20, opacity: 0 });
-
-      // CTA buttons
-      gsap.set('[data-anim="ctas"]', { scale: 0.9, opacity: 0 });
-
-      // Stats children
-      gsap.set('[data-anim="stats"] > *', { y: 15, opacity: 0 });
-
-      // 3D scene wrapper
-      gsap.set('[data-anim="scene"]', { scale: 0.8, opacity: 0 });
-
-      // Floating badges
-      gsap.set('[data-anim="badge"]', { opacity: 0 });
-
-      // Scroll indicator
-      gsap.set('[data-anim="scroll-indicator"]', { opacity: 0 });
-    }, section);
-
-    return () => ctx.revert();
-  }, []);
-
-  /* ── Master reveal timeline — fires when loader finishes ── */
-  useEffect(() => {
-    if (!animationReady) return;
-    const section = sectionRef.current;
-    if (!section) return;
-
-    const ctx = gsap.context(() => {
-      const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
-      tlRef.current = tl;
-
-      // Background grid fades in
-      tl.to(
-        '[data-anim="grid"]',
-        { opacity: 0.035, duration: 1.2, ease: "power2.out" },
-        0
-      );
-
-      // 3D Scene scales in
-      tl.to(
-        '[data-anim="scene"]',
-        { scale: 1, opacity: 1, duration: 1.4, ease: "power2.out" },
-        0.1
-      );
-
-      // Eyebrow
-      tl.to(
-        '[data-anim="eyebrow"]',
-        { y: 0, opacity: 1, duration: 0.7 },
-        0.15
-      );
-
-      // Headlines — per-character stagger with blur-to-sharp
-      const headlineGroups = section.querySelectorAll('[data-anim^="headline-"]');
-      headlineGroups.forEach((group, i) => {
-        const chars = group.querySelectorAll(".hero-char");
-        if (chars.length === 0) return;
-        tl.to(
-          chars,
-          {
-            y: 0,
-            opacity: 1,
-            filter: "blur(0px)",
-            duration: 0.8,
-            stagger: 0.02,
-            ease: "power3.out",
-          },
-          0.25 + i * 0.15
-        );
-      });
-
-      // Subtext
-      tl.to(
-        '[data-anim="subtext"]',
-        { y: 0, opacity: 1, duration: 0.7 },
-        0.65
-      );
-
-      // CTA buttons — slight bounce
-      tl.to(
-        '[data-anim="ctas"]',
-        { scale: 1, opacity: 1, duration: 0.6, ease: "back.out(1.4)" },
-        0.75
-      );
-
-      // Stats — stagger children
-      tl.to(
-        '[data-anim="stats"] > *',
-        { y: 0, opacity: 1, duration: 0.5, stagger: 0.1, ease: "power2.out" },
-        0.85
-      );
-
-      // Floating badges — stagger in
-      tl.to(
-        '[data-anim="badge"]',
-        { opacity: 1, duration: 0.6, stagger: 0.15, ease: "power2.out" },
-        0.95
-      );
-
-      // Scroll indicator — last
-      tl.to(
-        '[data-anim="scroll-indicator"]',
-        { opacity: 1, duration: 0.5, ease: "power2.out" },
-        1.2
-      );
-
-      // Cleanup will-change after all animations complete
-      tl.call(() => {
-        section.querySelectorAll(".hero-char").forEach((el) => {
-          el.style.willChange = "auto";
-        });
-      });
-    }, section);
-
-    return () => ctx.revert();
-  }, [animationReady]);
-
-  return (
-    <section
-      ref={sectionRef}
-      id="hero"
-      className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-[#080808]"
-    >
-      {/* Background */}
-      <div className="absolute inset-0" data-anim="scene">
-        {isMobile ? (
-          <div className="h-full w-full" style={{
-            background: "radial-gradient(ellipse at 30% 20%, #1e3a8a18 0%, transparent 60%), radial-gradient(ellipse at 80% 80%, #0ea5e910 0%, transparent 60%), #080808"
-          }}/>
-        ) : (
-          <Suspense fallback={
-            <div className="h-full w-full" style={{
-              background: "radial-gradient(ellipse at 30% 30%, #1e3a8a18 0%, transparent 60%), #080808"
-            }}/>
-          }>
-            <HeroScene />
-          </Suspense>
-        )}
-      </div>
-
-      <GridLines />
-      <GradientOrbs />
-
-      {/* Mouse parallax — desktop only */}
-      {!isMobile && (
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background: `radial-gradient(ellipse at ${mousePos.x * 100}% ${mousePos.y * 100}%, rgba(59,130,246,0.045) 0%, transparent 55%)`,
-            transition: "background 0.1s",
-          }}
-        />
+      {/* Mobile menu */}
+      {menuOpen && (
+        <div className="hero-mobile-menu">
+          {navItems.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className="hero-mobile-menu-link"
+              onClick={() => handleNav(item.id)}
+            >
+              {item.label}
+              <span style={{ opacity: 0.5 }}>↗</span>
+            </button>
+          ))}
+          <div style={{ display: "flex", gap: "0.5rem", marginTop: "1rem" }}>
+            <a
+              href="https://github.com/AkshayBuilds"
+              target="_blank"
+              rel="noreferrer"
+              className="hero-mobile-menu-link"
+              style={{ flex: 1, justifyContent: "center", gap: "8px" }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.009-.868-.013-1.703-2.782.604-3.369-1.342-3.369-1.342-.454-1.154-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.532 1.03 1.532 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0 1 12 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z" />
+              </svg>
+              GitHub
+            </a>
+            <a
+              href="https://www.linkedin.com/in/akshay-web/"
+              target="_blank"
+              rel="noreferrer"
+              className="hero-mobile-menu-link"
+              style={{ flex: 1, justifyContent: "center", gap: "8px" }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+              </svg>
+              LinkedIn
+            </a>
+          </div>
+          <button
+            type="button"
+            className="hero-mobile-close"
+            onClick={() => setMenuOpen(false)}
+          >
+            Close
+          </button>
+        </div>
       )}
-
-      {/* Dark overlay */}
-      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-black/40 via-black/30 to-black/60" />
-
-      {/* Floating badges — desktop only */}
-      <FloatingBadge style={{top:"22%",right:"8%"}}  delay={0}>React.js</FloatingBadge>
-      <FloatingBadge style={{top:"55%",right:"5%"}}  delay={2}>Node.js</FloatingBadge>
-      <FloatingBadge style={{top:"38%",right:"18%"}} delay={1}>MongoDB</FloatingBadge>
-
-      {/* ── Main content ── */}
-      <div className="relative z-10 w-full px-5 pt-24 md:px-10 md:pt-28 lg:px-16">
-        <div className="flex w-full max-w-[1100px] flex-col gap-5 md:gap-7">
-
-          {/* EYEBROW */}
-          <div
-            data-anim="eyebrow"
-            className="flex items-center gap-3"
-          >
-            <span className="h-px w-8 bg-[#3b82f6]/60" />
-            <span className="font-mono text-[10px] font-semibold tracking-[0.3em] text-[#3b82f6]/70 uppercase sm:text-[11px]">
-              Full Stack Developer
-            </span>
-          </div>
-
-          {/* HEADLINE LINES */}
-          <div className="flex flex-col gap-0 md:gap-1">
-            {[
-              { text: "Hi, I'm Akshay.", idx: 0 },
-              { text: null,              idx: 1 },   /* custom render for MERN Stack */
-              { text: "Developer.",      idx: 2 },
-            ].map(({ text, idx }) => (
-              <h1
-                key={idx}
-                data-anim={`headline-${idx}`}
-                className="font-display tracking-tight text-white"
-                style={{
-                  fontSize: "clamp(38px, 9vw, 108px)",
-                  fontWeight: 700,
-                  lineHeight: 0.92,
-                  letterSpacing: "-0.025em",
-                }}
-              >
-                {idx === 1 ? (
-                  <>
-                    <SplitChars>MERN</SplitChars>
-                    <span className="ml-3 md:ml-4" style={{
-                      WebkitTextStroke: "1px rgba(255,255,255,0.18)",
-                      WebkitTextFillColor: "transparent",
-                    }}>
-                      <SplitChars>Stack</SplitChars>
-                    </span>
-                  </>
-                ) : (
-                  <SplitChars>{text}</SplitChars>
-                )}
-              </h1>
-            ))}
-          </div>
-
-          {/* SUBTEXT */}
-          <p
-            data-anim="subtext"
-            className="max-w-[50rem] font-sans text-[13px] leading-relaxed text-zinc-400 md:text-[15px]"
-          >
-            Building{" "}
-            <span className="text-[#3b82f6]/80 font-medium">full-stack</span> products with{" "}
-            <span className="font-mono text-zinc-300 text-[12px] bg-white/[0.05] rounded px-1.5 py-0.5 md:text-[13px]">React</span>{" "}
-            <span className="font-mono text-zinc-300 text-[12px] bg-white/[0.05] rounded px-1.5 py-0.5 md:text-[13px]">Node.js</span>{" "}
-            <span className="font-mono text-zinc-300 text-[12px] bg-white/[0.05] rounded px-1.5 py-0.5 md:text-[13px]">MongoDB</span>{" "}
-            — shipping fast, built to scale.
-          </p>
-
-          {/* CTAs */}
-          <div
-            data-anim="ctas"
-            className="flex flex-col gap-3 sm:flex-row sm:items-center"
-          >
-            <MagneticButton primary onClick={() => scrollToId("work")}>
-              <span className="mr-2">View My Work</span>
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <path d="M2 7h10M7 2l5 5-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </MagneticButton>
-            <MagneticButton href="/Akshay-Chaudhary-Resume.pdf">
-              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" className="mr-2">
-                <path d="M6.5 1v8M3 6.5l3.5 3.5L10 6.5M1 11.5h11" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              Download Resume
-            </MagneticButton>
-          </div>
-
-          {/* STATS */}
-          <div
-            data-anim="stats"
-            className="mt-2 flex items-center gap-5 border-t border-white/[0.06] pt-5 sm:gap-8"
-          >
-            <StatPill value="3+" label="Projects shipped" />
-            <div className="h-8 w-px bg-white/10" />
-            <StatPill value="MERN" label="Core stack" />
-            <div className="h-8 w-px bg-white/10" />
-            <StatPill value="∞" label="Problems solved" />
-          </div>
-
-        </div>
-      </div>
-
-      <ScrollIndicator />
-    </section>
+    </>
   );
 }

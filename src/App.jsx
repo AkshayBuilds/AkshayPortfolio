@@ -1,10 +1,8 @@
-import { lazy, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Lenis from "lenis";
 import NoiseOverlay from "./components/NoiseOverlay.jsx";
-import Header from "./components/layout/Header.jsx";
-import { useIsMobile } from "./lib/useIsMobile.js";
 import AboutSection from "./sections/AboutSection.jsx";
 import ContactSection from "./sections/ContactSection.jsx";
 import ExperienceSection from "./sections/ExperienceSection.jsx";
@@ -15,13 +13,8 @@ import WorkSection from "./sections/WorkSection.jsx";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const HeroScene = lazy(() => import("./components/HeroScene.jsx"));
-
 export default function App() {
-  const isMobile = useIsMobile(768);
   const lenisRef = useRef(null);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [navSolid, setNavSolid] = useState(false);
   const [toast, setToast] = useState(null);
 
 
@@ -56,10 +49,9 @@ export default function App() {
   );
 
   const scrollToId = (id) => {
-    setMenuOpen(false);
     const el = document.getElementById(id);
     if (!el) return;
-    lenisRef.current?.scrollTo(el, { offset: -84, duration: 1.2, easing: (t) => 1 - Math.pow(1 - t, 3) });
+    lenisRef.current?.scrollTo(el, { offset: 0, duration: 1.2, easing: (t) => 1 - Math.pow(1 - t, 3) });
   };
 
   // ── Lenis smooth scroll ───────────────────────────────────────────────────
@@ -90,13 +82,7 @@ export default function App() {
     };
   }, []);
 
-  // ── Nav solid on scroll ───────────────────────────────────────────────────
-  useEffect(() => {
-    const update = () => setNavSolid((window.scrollY || 0) > 20);
-    update();
-    window.addEventListener("scroll", update, { passive: true });
-    return () => window.removeEventListener("scroll", update);
-  }, []);
+
 
   // ── Stack-card shrink effect ──────────────────────────────────────────────
   useEffect(() => {
@@ -137,21 +123,8 @@ export default function App() {
     <div className="relative min-h-screen bg-[#080808] font-sans text-white">
       <NoiseOverlay />
 
-      <Header
-        navSolid={navSolid}
-        menuOpen={menuOpen}
-        setMenuOpen={setMenuOpen}
-        scrollToId={scrollToId}
-        animationReady
-      />
-
       <main className="relative">
-        <HeroSection
-          isMobile={isMobile}
-          HeroScene={HeroScene}
-          scrollToId={scrollToId}
-          animationReady
-        />
+        <HeroSection scrollToId={scrollToId} />
         <AboutSection />
         <SkillsSection />
         <ExperienceSection />
