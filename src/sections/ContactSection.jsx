@@ -8,11 +8,11 @@ gsap.registerPlugin(ScrollTrigger);
 
 // ── Contact data ──────────────────────────────────────────────────────────────
 const CONTACT_ITEMS = [
-  { label: "email",    icon: "✉",  value: "akshay.dev307@gmail.com",                     href: "mailto:akshay.dev307@gmail.com" },
-  { label: "phone",    icon: "☎",  value: "+91 931-684-7190",                             href: "tel:+919316847190" },
-  { label: "linkedin", icon: "in", value: "linkedin.com/in/akshay-web",                   href: "https://www.linkedin.com/in/akshay-web/" },
-  { label: "github",   icon: "gh", value: "github.com/AkshayBuilds",                      href: "https://github.com/AkshayBuilds" },
-  { label: "portfolio",icon: "◈",  value: "portfolio-blue-ten-46.vercel.app",             href: "https://portfolio-blue-ten-46.vercel.app/" },
+  { label: "email", icon: "✉", value: "akshay.dev307@gmail.com", href: "mailto:akshay.dev307@gmail.com" },
+  { label: "phone", icon: "☎", value: "+91 931-684-7190", href: "tel:+919316847190" },
+  { label: "linkedin", icon: "in", value: "linkedin.com/in/akshay-web", href: "https://www.linkedin.com/in/akshay-web/" },
+  { label: "github", icon: "gh", value: "github.com/AkshayBuilds", href: "https://github.com/AkshayBuilds" },
+  { label: "portfolio", icon: "◈", value: "portfolio-blue-ten-46.vercel.app", href: "https://portfolio-blue-ten-46.vercel.app/" },
 ];
 
 // ── Animated beam background ──────────────────────────────────────────────────
@@ -98,24 +98,17 @@ function TerminalRow({ item, copyField, index }) {
 function StatusBadge() {
   return (
     <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/[0.06] px-3 py-1.5">
-      <span className="relative flex h-2 w-2">
-        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-        <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
-      </span>
-      <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400">
-        Available for work
-      </span>
     </div>
   );
 }
 
 // ── Main Section ──────────────────────────────────────────────────────────────
 export default function ContactSection({ copyField, onToast }) {
-  const sectionRef  = useRef(null);
-  const leftRef     = useRef(null);
-  const rightRef    = useRef(null);
-  const headingRef  = useRef(null);
-  const rowsRef     = useRef(null);
+  const sectionRef = useRef(null);
+  const leftRef = useRef(null);
+  const rightRef = useRef(null);
+  const headingRef = useRef(null);
+  const rowsRef = useRef(null);
   const [cursorVisible, setCursorVisible] = useState(true);
 
   // Blinking cursor on heading
@@ -132,12 +125,12 @@ export default function ContactSection({ copyField, onToast }) {
         rightRef.current,
         headingRef.current,
       ].filter(Boolean);
-  
+
       gsap.set(els, { opacity: 0, y: 48 });
-  
+
       const rows = rowsRef.current?.querySelectorAll(".terminal-row") ?? [];
       gsap.set(rows, { opacity: 0, x: -24 });
-  
+
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: sectionRef.current,
@@ -145,7 +138,7 @@ export default function ContactSection({ copyField, onToast }) {
           toggleActions: "play none none none",
         },
       });
-  
+
       tl.to(headingRef.current, {
         opacity: 1,
         y: 0,
@@ -174,7 +167,7 @@ export default function ContactSection({ copyField, onToast }) {
           "-=0.6"
         );
     }, sectionRef);
-  
+
     return () => ctx.revert();
   }, []);
 
@@ -348,9 +341,9 @@ export default function ContactSection({ copyField, onToast }) {
               <a
                 key={s}
                 href={
-                  s === "GitHub"   ? "https://github.com/AkshayBuilds" :
-                  s === "LinkedIn" ? "https://www.linkedin.com/in/akshay-web/" :
-                  "mailto:akshay.dev307@gmail.com"
+                  s === "GitHub" ? "https://github.com/AkshayBuilds" :
+                    s === "LinkedIn" ? "https://www.linkedin.com/in/akshay-web/" :
+                      "mailto:akshay.dev307@gmail.com"
                 }
                 target={s !== "Email" ? "_blank" : undefined}
                 rel="noreferrer"
