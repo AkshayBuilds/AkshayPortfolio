@@ -3,24 +3,24 @@ import { motion } from "framer-motion";
 // ─── Data ────────────────────────────────────────────────────────────────────
 const experienceItems = [
   {
-    text: "Engineered responsive React.js interfaces, improving component clarity and layout consistency across devices",
-    tag: "UI/UX",
+    text: "Developed enterprise-grade modules including Workspace, Staff Management, and Visa Configuration for a multi-tenant SaaS application",
+    tag: "SaaS",
   },
   {
-    text: "Architected 10+ reusable modular components, increasing maintainability and cutting feature dev time ~30%",
+    text: "Designed reusable, type-safe React and Next.js components using TypeScript to improve scalability and maintainability",
     tag: "Architecture",
   },
   {
-    text: "Integrated REST APIs to enable real-time data flow, eliminating stale-data issues across key views",
-    tag: "API",
+    text: "Integrated RESTful APIs and enforced role-based access control across Super Admin, Admin, Staff, and Client dashboards",
+    tag: "RBAC",
   },
   {
-    text: "Optimised rendering performance with lazy loading and memoisation to improve page load efficiency",
+    text: "Implemented dynamic notification systems and optimized frontend performance with modular, feature-first architecture",
     tag: "Performance",
   },
   {
-    text: "Collaborated using Git and GitHub with clean branching strategies and participated in code reviews",
-    tag: "DevOps",
+    text: "Worked in an Agile development environment using Git/GitHub, pull requests, and collaborative code reviews",
+    tag: "Agile",
   },
 ];
 
@@ -433,8 +433,7 @@ export default function ExperienceSection() {
             <span className="xp-badge">Career</span>
             <h2 className="xp-heading">Experience</h2>
             <p className="xp-subtitle">
-              Professional experience building production-grade React
-              applications and contributing to real-world products.
+              Professional experience building scalable full-stack SaaS applications with React, Next.js, Node.js, and TypeScript.
             </p>
           </motion.div>
 
@@ -444,12 +443,12 @@ export default function ExperienceSection() {
             {/* Header */}
             <div className="xp-card-header">
               <div>
-                <h3 className="xp-role">React.js Developer Intern</h3>
-                <p className="xp-company">Pyonix Technology</p>
+                <h3 className="xp-role">Full-Stack Developer Intern</h3>
+                <p className="xp-company">Tierce India Private Limited</p>
               </div>
               <span className="xp-duration-badge">
                 <span className="xp-duration-dot" />
-                Nov 2025 — Feb 2026
+                May, 2025 - Present
               </span>
             </div>
 
@@ -474,7 +473,7 @@ export default function ExperienceSection() {
             {/* Stats */}
             <div className="xp-stats">
               {[
-                { value: "10+", label: "Components" },
+                { value: "100+", label: "Components" },
                 { value: "~30%", label: "Faster Dev" },
                 { value: "3mo", label: "Duration" },
               ].map((stat, i) => (
