@@ -448,7 +448,7 @@ export default function ExperienceSection() {
               </div>
               <span className="xp-duration-badge">
                 <span className="xp-duration-dot" />
-                May, 2025 - Present
+                May, 2026 - Present
               </span>
             </div>
 
